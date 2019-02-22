@@ -8,6 +8,7 @@ import (
     "net/http"
     "os"
     "errors"
+    "strings"
 
     "github.com/mitchellh/go-homedir"
 
@@ -23,7 +24,6 @@ var max_id uint = 0
 
 type Note struct {
     Id uint `json:"id"`
-    Name string `json:"name"`
     Content string `json:"content"`
     Priority uint `json:"priority"`
     Done bool `json:"done"`
@@ -245,8 +245,13 @@ func handleArgs(args []string) (err error) {
         return errors.New("Insufficient parameters")
     }
 
-    if args[0] == "add" {
-        note := Note{Id: max_id + 1, Name:"test", Content:"plaa", Priority: 1, Done: false}
+    if args[0] == "qa" {
+        if len(args) < 2 {
+            return errors.New("Missing note content")
+        }
+
+        content := strings.Join(args[1:], " ")
+        note := Note{Id: max_id + 1, Content: content, Priority: 5, Done: false}
         notes = append(notes, note)
     }
 
