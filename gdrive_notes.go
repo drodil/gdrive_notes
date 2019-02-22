@@ -19,8 +19,10 @@ import (
 
 var app_folder = ""
 var gdrive *drive.Service = nil
+var max_id uint = 0
 
 type Note struct {
+    Id uint `json:"id"`
     Name string `json:"name"`
     Content string `json:"content"`
     Priority uint `json:"priority"`
@@ -199,7 +201,7 @@ func parseNotes(file *drive.File) (err error) {
     }
 
     if len(dat) == 0 {
-        return syncNotesFile(file)
+        return nil
     }
 
     notesJSON := make([]Note, 0)
@@ -209,7 +211,9 @@ func parseNotes(file *drive.File) (err error) {
     }
 
     notes = notesJSON
-    fmt.Print(notes)
+    if len(notes) > 0 {
+        max_id = notes[len(notes)-1].Id
+    }
 
     return nil
 }
@@ -242,8 +246,12 @@ func handleArgs(args []string) (err error) {
     }
 
     if args[0] == "add" {
-        note := Note{Name:"test", Content:"plaa", Priority: 1, Done: false}
+        note := Note{Id: max_id + 1, Name:"test", Content:"plaa", Priority: 1, Done: false}
         notes = append(notes, note)
+    }
+
+    if args[0] == "clear" {
+        notes = notes[:0]
     }
 
     return nil
