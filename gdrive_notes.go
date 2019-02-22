@@ -240,26 +240,53 @@ func setUpDrive() (error) {
     return nil
 }
 
-func handleArgs(args []string) (err error) {
-    if len(args) == 0 {
-        return errors.New("Insufficient parameters")
+func printNote(note Note) {
+    if !note.Done {
+        fmt.Print("[ ]")
+    } else {
+        fmt.Print("[x]")
     }
 
-    if args[0] == "qa" {
-        if len(args) < 2 {
-            return errors.New("Missing note content")
+    fmt.Print(" ")
+    fmt.Print(note.Content)
+    fmt.Print("\t")
+    fmt.Print(note.Priority)
+}
+
+func handleArgs(args []string) (bool, error) {
+    if len(args) == 0 {
+        return false, errors.New("Insufficient parameters")
+    }
+
+    command := args[0]
+    args = args[1:]
+
+    if command == "qa" {
+        if len(args) < 1 {
+            return false, errors.New("Missing note content")
         }
 
-        content := strings.Join(args[1:], " ")
+        content := strings.Join(args, " ")
         note := Note{Id: max_id + 1, Content: content, Priority: 5, Done: false}
         notes = append(notes, note)
+        return true, nil
     }
 
-    if args[0] == "clear" {
+    if command == "clear" {
         notes = notes[:0]
+        return true, nil
     }
 
-    return nil
+    if command == "ls" {
+        for _, note := range notes {
+            printNote(note)
+            fmt.Print("\n")
+        }
+
+        return false, nil
+    }
+
+    return false, nil
 }
 
 func printHelp() {
@@ -301,15 +328,17 @@ func main() {
         os.Exit(1)
     }
 
-    err = handleArgs(args)
+    update, err := handleArgs(args)
     if err != nil {
         printHelp()
         os.Exit(0)
     }
 
-    err = syncNotesFile(notes)
-    if err != nil {
-        log.Fatalf("Could not sync notes to Drive: %v", err)
-        os.Exit(1)
+    if update {
+       err = syncNotesFile(notes)
+        if err != nil {
+            log.Fatalf("Could not sync notes to Drive: %v", err)
+            os.Exit(1)
+        }
     }
 }
