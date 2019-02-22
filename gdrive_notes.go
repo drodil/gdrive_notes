@@ -18,6 +18,7 @@ import (
 )
 
 var app_folder = ""
+var gdrive *drive.Service = nil
 
 type Note struct {
     Name string `json:"name"`
@@ -25,6 +26,8 @@ type Note struct {
     Priority uint `json:"priority"`
     Done bool `json:"done"`
 }
+
+var notes []Note
 
 func createAppFolder() (error) {
     home, err := homedir.Dir()
@@ -88,13 +91,59 @@ func saveToken(path string, token *oauth2.Token) {
     json.NewEncoder(f).Encode(token)
 }
 
-func createNotesFile(srv *drive.Service) {
-    file := &drive.File{Name: "notes.json", Parents: []string{"appDataFolder"}}
-    srv.Files.Create(file).Do()
+func createNotesFile() (file *drive.File, err error) {
+    new_file := &drive.File{Name: "notes.json", Parents: []string{"appDataFolder"}}
+    ret, err := gdrive.Files.Create(new_file).Do()
+    if err != nil {
+        return nil, err
+    }
+    return ret, nil
 }
 
-func getNotesFile(srv *drive.Service) (file *drive.File, err error) {
-    request := srv.Files.List().PageSize(10)
+func saveNotes(file *drive.File) (err error) {
+    jsonStr, err := json.Marshal(notes)
+    if err != nil {
+        return err
+    }
+
+    f, err := os.Create("/tmp/" + file.Name)
+    if err != nil {
+        return err
+    }
+
+    defer f.Close()
+    _, err = f.Write(jsonStr)
+
+    if err != nil {
+        return err
+    }
+
+    f.Sync()
+    return nil
+}
+
+func syncNotesFile(file *drive.File) (err error) {
+    err = saveNotes(file)
+    if err != nil {
+        return err
+    }
+
+    reader, err := os.Open("/tmp/" + file.Name)
+    if err != nil {
+        return err
+    }
+
+    update := gdrive.Files.Update(file.Id, &drive.File{})
+    _, err = update.Media(reader).Do()
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func getNotesFile() (file *drive.File, err error) {
+    request := gdrive.Files.List().PageSize(10)
     request.Spaces("appDataFolder")
     request.Fields("nextPageToken, files(id, name)")
     r, err := request.Do()
@@ -112,8 +161,8 @@ func getNotesFile(srv *drive.Service) (file *drive.File, err error) {
     return nil, errors.New("Could not find notes file")
 }
 
-func reloadFromDrive(srv *drive.Service, file *drive.File) (err error) {
-    export := srv.Files.Get(file.Id)
+func reloadFromDrive(file *drive.File) (err error) {
+    export := gdrive.Files.Get(file.Id)
 
     res, experr := export.Download()
     if experr != nil {
@@ -140,6 +189,50 @@ func reloadFromDrive(srv *drive.Service, file *drive.File) (err error) {
 
     f.Sync()
 
+    return parseNotes(file)
+}
+
+func parseNotes(file *drive.File) (err error) {
+    dat, err := ioutil.ReadFile("/tmp/" + file.Name)
+    if err != nil {
+        return err
+    }
+
+    if len(dat) == 0 {
+        return syncNotesFile(file)
+    }
+
+    notesJSON := make([]Note, 0)
+    err = json.Unmarshal(dat, &notesJSON)
+    if err != nil {
+        return err
+    }
+
+    notes = notesJSON
+    fmt.Print(notes)
+
+    return nil
+}
+
+func setUpDrive() (error) {
+    b, err := ioutil.ReadFile("credentials.json")
+    if err != nil {
+        return err
+    }
+
+    config, err := google.ConfigFromJSON(b, drive.DriveAppdataScope)
+    if err != nil {
+        return err
+    }
+    client := getClient(config)
+
+    srv, err := drive.New(client)
+    if err != nil {
+        return err
+    }
+
+    gdrive = srv
+
     return nil
 }
 
@@ -148,8 +241,9 @@ func handleArgs(args []string) (err error) {
         return errors.New("Insufficient parameters")
     }
 
-    if args[0] == "ls" {
-        fmt.Println("LS")
+    if args[0] == "add" {
+        note := Note{Name:"test", Content:"plaa", Priority: 1, Done: false}
+        notes = append(notes, note)
     }
 
     return nil
@@ -162,42 +256,25 @@ func printHelp() {
 
 func main() {
     args := os.Args[1:]
-    err := handleArgs(args)
-    if err != nil {
-        printHelp()
-        os.Exit(0)
-    }
-
-    err = createAppFolder()
+    err := createAppFolder()
     if err != nil {
         log.Fatalf("Could not create app folder: %v", err)
         os.Exit(1)
     }
 
-    b, err := ioutil.ReadFile("credentials.json")
+    err = setUpDrive()
     if err != nil {
-        log.Fatalf("Unable to read client secret file: %v", err)
+        log.Fatalf("Could not setup Drive sync: %v", err)
         os.Exit(1)
     }
 
-    // If modifying these scopes, delete your previously saved token.json.
-    config, err := google.ConfigFromJSON(b, drive.DriveAppdataScope)
-    if err != nil {
-        log.Fatalf("Unable to parse client secret file to config: %v", err)
-        os.Exit(1)
-    }
-    client := getClient(config)
-
-    srv, err := drive.New(client)
-    if err != nil {
-        log.Fatalf("Unable to retrieve Drive client: %v", err)
-        os.Exit(1)
-    }
-
-    notes, err := getNotesFile(srv)
+    notes, err := getNotesFile()
     if err != nil || notes == nil {
-        createNotesFile(srv)
-        notes, err = getNotesFile(srv)
+        notes, err = createNotesFile()
+        if err != nil {
+            log.Fatalf("Could not create file to Drive: %v", err)
+            os.Exit(1)
+        }
     }
 
     if err != nil {
@@ -205,9 +282,21 @@ func main() {
         os.Exit(1)
     }
 
-    err = reloadFromDrive(srv, notes)
+    err = reloadFromDrive(notes)
     if err != nil {
         log.Fatalf("Could not reload from Drive: %v", err)
+        os.Exit(1)
+    }
+
+    err = handleArgs(args)
+    if err != nil {
+        printHelp()
+        os.Exit(0)
+    }
+
+    err = syncNotesFile(notes)
+    if err != nil {
+        log.Fatalf("Could not sync notes to Drive: %v", err)
         os.Exit(1)
     }
 }
