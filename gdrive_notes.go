@@ -258,6 +258,7 @@ func printNote(note Note) {
 }
 
 func handleArgs(args []string) (bool, error) {
+    // TODO: Return nil instead error when GUI is available and start that
     if len(args) == 0 {
         return false, errors.New("Insufficient parameters")
     }
@@ -265,54 +266,77 @@ func handleArgs(args []string) (bool, error) {
     command := args[0]
     args = args[1:]
 
-    if command == "qa" {
-        if len(args) < 1 {
-            return false, errors.New("Missing note content")
-        }
-
-        content := strings.Join(args, " ")
-        note := Note{Id: max_id + 1, Content: content, Priority: 5, Done: false}
-        notes = append(notes, note)
-        return true, nil
-    }
-
-    if command == "clear" {
-        notes = notes[:0]
-        return true, nil
-    }
-
-    if command == "todo" {
-        for _, note := range notes {
-            printNote(note)
-            fmt.Print("\n")
-        }
-
-        return false, nil
-    }
-
-    if command == "md" {
-        if len(args) < 1 {
-            return false, errors.New("Give note id")
-        }
-
-        id, err := strconv.ParseUint(args[0], 0, 32)
-
-        if err != nil {
-            return false, err
-        }
-
-        for i, _ := range notes {
-            note := &notes[i]
-            if note.Id == uint(id) {
-                note.Done = true
-                break
+    switch command {
+        // Quick add note
+        case "qa":
+            if len(args) < 1 {
+                return false, errors.New("Missing note content")
             }
-        }
 
-        return true, nil
+            content := strings.Join(args, " ")
+            note := Note{Id: max_id + 1, Content: content, Priority: 5, Done: false}
+            notes = append(notes, note)
+            return true, nil
+
+        // Clear all notes
+        // TODO: Confirm from user
+        case "clear":
+            notes = notes[:0]
+            return true, nil
+
+        // List all notes
+        // TODO: Additional parameters for ordering etc.
+        case "list":
+        case "ls":
+            for _, note := range notes {
+                printNote(note)
+                fmt.Print("\n")
+            }
+            return false, nil
+
+        // List only not done notes
+        // TODO: Additional parameters for ordering etc.
+        case "td":
+        case "todo":
+            for _, note := range notes {
+                if note.Done == true {
+                    continue
+                }
+                printNote(note)
+                fmt.Print("\n")
+            }
+
+            return false, nil
+
+        // Mark done by ID
+        case "done":
+        case "md":
+            if len(args) < 1 {
+                return false, errors.New("Give note id")
+            }
+
+            id, err := strconv.ParseUint(args[0], 0, 32)
+
+            if err != nil {
+                return false, err
+            }
+
+            for i, _ := range notes {
+                note := &notes[i]
+                if note.Id == uint(id) {
+                    note.Done = true
+                    break
+                }
+            }
+
+            return true, nil
+
+       // TODO: Add command with $EDITOR to temp .md file
+       // TODO: Edit existing notes
+       // TODO: Set priority of notes
     }
 
-    return false, nil
+    return false, errors.New("Invalid command")
 }
 
 func printHelp() {
