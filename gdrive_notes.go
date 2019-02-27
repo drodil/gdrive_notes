@@ -10,6 +10,7 @@ import (
     "errors"
     "strings"
     "strconv"
+    "time"
 
     "github.com/mitchellh/go-homedir"
 
@@ -28,6 +29,9 @@ type Note struct {
     Content string `json:"content"`
     Priority uint `json:"priority"`
     Done bool `json:"done"`
+    Created time.Time `json:"created"`
+    Updated time.Time `json:"updated"`
+    Due time.Time     `json:"due"`
 }
 
 var notes []Note
@@ -245,6 +249,7 @@ func printNote(note Note) {
     fmt.Print(note.Id)
     fmt.Print(" ")
 
+    // TODO: Create configuration to allow user configure which columns to show
     if !note.Done {
         fmt.Print("[ ]")
     } else {
@@ -255,6 +260,9 @@ func printNote(note Note) {
     fmt.Print(note.Content)
     fmt.Print("\t")
     fmt.Print(note.Priority)
+    fmt.Print("\t")
+    // TODO: Create configuration to allow user select format of dates
+    fmt.Print(note.Created.Format("2006-01-02 15:04"))
 }
 
 func handleArgs(args []string) (bool, error) {
@@ -274,7 +282,8 @@ func handleArgs(args []string) (bool, error) {
             }
 
             content := strings.Join(args, " ")
-            note := Note{Id: max_id + 1, Content: content, Priority: 5, Done: false}
+            now := time.Now()
+            note := Note{Id: max_id + 1, Content: content, Priority: 5, Done: false, Created: now, Updated: now}
             notes = append(notes, note)
             return true, nil
 
@@ -342,6 +351,7 @@ func handleArgs(args []string) (bool, error) {
 func printHelp() {
     fmt.Println("Google Drive Notes")
     fmt.Println("------------------")
+    // TODO: Create help for commands
 }
 
 func main() {
@@ -372,6 +382,7 @@ func main() {
         os.Exit(1)
     }
 
+    // TODO: Only reload if it has changed from last load
     err = reloadFromDrive(notes)
     if err != nil {
         log.Fatalf("Could not reload from Drive: %v", err)
