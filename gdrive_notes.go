@@ -9,6 +9,7 @@ import (
     "os"
     "errors"
     "strings"
+    "strconv"
 
     "github.com/mitchellh/go-homedir"
 
@@ -241,6 +242,9 @@ func setUpDrive() (error) {
 }
 
 func printNote(note Note) {
+    fmt.Print(note.Id)
+    fmt.Print(" ")
+
     if !note.Done {
         fmt.Print("[ ]")
     } else {
@@ -277,13 +281,35 @@ func handleArgs(args []string) (bool, error) {
         return true, nil
     }
 
-    if command == "ls" {
+    if command == "todo" {
         for _, note := range notes {
             printNote(note)
             fmt.Print("\n")
         }
 
         return false, nil
+    }
+
+    if command == "md" {
+        if len(args) < 1 {
+            return false, errors.New("Give note id")
+        }
+
+        id, err := strconv.ParseUint(args[0], 0, 32)
+
+        if err != nil {
+            return false, err
+        }
+
+        for i, _ := range notes {
+            note := &notes[i]
+            if note.Id == uint(id) {
+                note.Done = true
+                break
+            }
+        }
+
+        return true, nil
     }
 
     return false, nil
