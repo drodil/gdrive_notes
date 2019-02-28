@@ -70,6 +70,17 @@ func (n *Notes) AddNote(note Note) {
     n.Notes = append(n.Notes, note)
 }
 
+func (n *Notes) FindNote(id uint) (*Note) {
+    for i, _ := range n.Notes {
+        note := &n.Notes[i]
+        if note.Id == id {
+            return note
+        }
+    }
+
+    return nil
+}
+
 func (n *Notes) createNotesFile() (file *drive.File, err error) {
     new_file := &drive.File{Name: "notes.json", Parents: []string{"appDataFolder"}}
     ret, err := n.gdrive.Files.Create(new_file).Do()

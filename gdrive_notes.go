@@ -50,6 +50,7 @@ func handleArgs(args []string, n *Notes) (bool, error) {
         // List all notes
         // TODO: Additional parameters for ordering etc.
         case "list":
+            fallthrough
         case "ls":
             for _, note := range n.Notes {
                 note.Print()
@@ -60,6 +61,7 @@ func handleArgs(args []string, n *Notes) (bool, error) {
         // List only not done notes
         // TODO: Additional parameters for ordering etc.
         case "td":
+            fallthrough
         case "todo":
             for _, note := range n.Notes {
                 if note.Done == true {
@@ -73,6 +75,7 @@ func handleArgs(args []string, n *Notes) (bool, error) {
 
         // Mark done by ID
         case "done":
+            fallthrough
         case "md":
             if len(args) < 1 {
                 return false, errors.New("Give note id")
@@ -84,18 +87,34 @@ func handleArgs(args []string, n *Notes) (bool, error) {
                 return false, err
             }
 
-            for i, _ := range n.Notes {
-                note := &n.Notes[i]
-                if note.Id == uint(id) {
-                    note.Done = true
-                    break
-                }
+            note := n.FindNote(uint(id))
+            if note == nil {
+                return false, errors.New("Could not find note with id")
             }
-
+            note.Done = true
             return true, nil
 
-       // TODO: Add command with $EDITOR to temp .md file
-       // TODO: Edit existing notes
+        case "e":
+            fallthrough
+        case "edit":
+             if len(args) < 1 {
+                return false, errors.New("Give note id")
+            }
+
+            id, err := strconv.ParseUint(args[0], 0, 32)
+
+            if err != nil {
+                return false, err
+            }
+
+            note := n.FindNote(uint(id))
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+            note.EditInEditor()
+            return true, nil
+
        // TODO: Set priority of notes
     }
 
