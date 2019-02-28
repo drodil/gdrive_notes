@@ -34,6 +34,13 @@ func handleListArgs(args []string, printer *NotesPrinter) {
         if (arg == "--search" || arg == "-s") && len(args) > i + 1 {
             printer.SearchStr = args[i+1]
         }
+
+        if (arg == "--prio" || arg == "-p") && len(args) > i + 1 {
+            prio, err := strconv.ParseUint(args[i+1], 0, 32)
+            if err != nil {
+                printer.PrioFilter = uint(prio)
+            }
+        }
     }
 }
 
@@ -230,6 +237,7 @@ func printHelp(err error) {
     fmt.Println("--order|-o <column>\tOrder by column. Has to be one of the following:")
     fmt.Println("\t\t\ttitle,prio,created,updated,due")
     fmt.Println("--search|-s <string>\tSearch for notes with given content")
+    fmt.Println("--prio|-p <int>\tSearch for notes with this or greater priority")
 }
 
 func main() {

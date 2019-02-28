@@ -23,6 +23,7 @@ type NotesPrinter struct {
     SortColumn string
     SortAsc bool
     SearchStr string
+    PrioFilter uint
 }
 
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
@@ -41,6 +42,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.SortColumn = "Id"
     inst.SortAsc = true
     inst.SearchStr = ""
+    inst.PrioFilter = 0
     return inst
 }
 
@@ -87,6 +89,9 @@ func (p *NotesPrinter) Print(n *Notes) {
             continue
         }
         if len(p.SearchStr) > 0 && !strings.Contains(note.Content, p.SearchStr) {
+            continue
+        }
+        if p.ShowPriority && note.Priority < p.PrioFilter {
             continue
         }
 
