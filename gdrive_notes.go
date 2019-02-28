@@ -10,7 +10,7 @@ import (
     "time"
 )
 
-func handleArgs(args []string, n *Notes) (bool, error) {
+func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
     // TODO: Return nil instead error when GUI is available and start that
     if len(args) == 0 {
         return false, errors.New("Insufficient parameters")
@@ -58,10 +58,8 @@ func handleArgs(args []string, n *Notes) (bool, error) {
         case "list":
             fallthrough
         case "ls":
-            for _, note := range n.Notes {
-                note.Print()
-                fmt.Print("\n")
-            }
+            printer := NewNotesPrinter(c)
+            printer.Print(n)
             return false, nil
 
         // List only not done notes
@@ -69,14 +67,10 @@ func handleArgs(args []string, n *Notes) (bool, error) {
         case "td":
             fallthrough
         case "todo":
-            for _, note := range n.Notes {
-                if note.Done == true {
-                    continue
-                }
-                note.Print()
-                fmt.Print("\n")
-            }
-
+            printer := NewNotesPrinter(c)
+            printer.ShowDone = false
+            printer.SkipDone = true
+            printer.Print(n)
             return false, nil
 
         // Mark done by ID
@@ -167,7 +161,7 @@ func main() {
         os.Exit(1)
     }
 
-    update, err := handleArgs(os.Args[1:], &notes)
+    update, err := handleArgs(os.Args[1:], &notes, &config)
     if err != nil {
         printHelp(err)
         os.Exit(0)
