@@ -20,6 +20,19 @@ func getNoteFromArg(arg string, n *Notes) (*Note) {
     return n.FindNote(uint(id))
 }
 
+func handleListArgs(args []string, printer *NotesPrinter) {
+    for i, arg := range args {
+        if (arg == "--order" || arg == "-o") && len(args) > i + 1{
+            col := args[i+1]
+            if strings.HasPrefix(col, "-") {
+                printer.SortAsc = false
+                col = col[1:]
+            }
+            printer.SortColumn = col
+        }
+    }
+}
+
 func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
     // TODO: Return nil instead error when GUI is available and start that
     if len(args) == 0 {
@@ -38,7 +51,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
 
             content := strings.Join(args, " ")
-            note := Note{Content: content, Priority: 5, Done: false, Created: now, Updated: now}
+            note := Note{Content: content, Priority: 0, Done: false, Created: now, Updated: now}
             id := n.AddNote(note)
             fmt.Printf("Added new note \"%v\" with id %v\n", note.GetTitle(), id)
             return true, nil
@@ -46,7 +59,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "a":
             fallthrough
         case "add":
-            note := Note{Created: now, Updated: now, Priority: 5}
+            note := Note{Created: now, Updated: now, Priority: 0}
             updated, err := note.EditInEditor()
             if err != nil {
                 return false, err
@@ -79,6 +92,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             fallthrough
         case "ls":
             printer := NewNotesPrinter(c)
+            handleListArgs(args, &printer)
             printer.Print(n)
             return false, nil
 
@@ -88,6 +102,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             fallthrough
         case "todo":
             printer := NewNotesPrinter(c)
+            handleListArgs(args, &printer)
             printer.ShowDone = false
             printer.SkipDone = true
             printer.Print(n)
@@ -189,23 +204,27 @@ func printHelp(err error) {
     fmt.Println("Available commands are:")
     fmt.Println("")
     fmt.Println("GENERAL:")
-    fmt.Println("h|help\t\tPrint this help")
-    fmt.Println("config\t\tConfigure the look&feel")
+    fmt.Println("h|help\t\t\tPrint this help")
+    fmt.Println("config\t\t\tConfigure the look&feel")
     fmt.Println("")
     fmt.Println("ADDING / EDITING:")
-    fmt.Println("qa <note>\tQuickly add note with default values")
-    fmt.Println("e|edit <id>\tEdit note with given id")
-    fmt.Println("a|add\t\tAdd new note with $EDITOR")
-    fmt.Println("md|done <id>\tMark note done with given id")
+    fmt.Println("qa <note>\t\tQuickly add note with default values")
+    fmt.Println("e|edit <id>\t\tEdit note with given id")
+    fmt.Println("a|add\t\t\tAdd new note with $EDITOR")
+    fmt.Println("md|done <id>\t\tMark note done with given id")
     fmt.Println("")
     fmt.Println("DELETING:")
-    fmt.Println("clear\t\tDelete all notes")
-    fmt.Println("rm|remove <id>\tRemove note with given id")
+    fmt.Println("clear\t\t\tDelete all notes")
+    fmt.Println("rm|remove <id>\t\tRemove note with given id")
     fmt.Println("")
     fmt.Println("SHOWING:")
-    fmt.Println("ls|list\t\tList all notes")
-    fmt.Println("td|todo\t\tList all not-done notes")
-    fmt.Println("s|show <id>\tShow note contents with given id")
+    fmt.Println("ls|list\t\t\tList all notes")
+    fmt.Println("td|todo\t\t\tList all not-done notes")
+    fmt.Println("s|show <id>\t\tShow note contents with given id")
+    fmt.Println("")
+    fmt.Println("Additional parameters for listing:")
+    fmt.Println("--order|-o <column>\tOrder by column. Has to be one of the following:")
+    fmt.Println("\t\t\ttitle,prio,created,updated,due")
 }
 
 func main() {

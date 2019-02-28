@@ -4,6 +4,7 @@ import(
     "fmt"
     "strings"
     "strconv"
+    "sort"
 
     "github.com/fatih/color"
 )
@@ -19,6 +20,8 @@ type NotesPrinter struct {
     ShowDue bool
     MaxTitleLength int
     TimeFormat string
+    SortColumn string
+    SortAsc bool
 }
 
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
@@ -34,6 +37,8 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.ShowDue = config.UseDue
     inst.MaxTitleLength = 30
     inst.TimeFormat = config.TimeFormat
+    inst.SortColumn = "Id"
+    inst.SortAsc = true
     return inst
 }
 
@@ -46,6 +51,34 @@ func (p *NotesPrinter) Print(n *Notes) {
     if p.PrintHeader {
         p.printHeader()
     }
+
+    sort.Slice(n.Notes, func(i, j int) bool {
+        ret := false
+        switch(p.SortColumn) {
+            case "prio":
+                ret = n.Notes[i].Priority < n.Notes[j].Priority
+                break
+            case "title":
+                ret = n.Notes[i].GetTitle() < n.Notes[j].GetTitle()
+                break
+            case "due":
+                ret = n.Notes[i].Due.Unix() < n.Notes[j].Due.Unix()
+                break
+            case "created":
+                ret = n.Notes[i].Created.Unix() < n.Notes[j].Created.Unix()
+                break
+            case "updated":
+                ret = n.Notes[i].Updated.Unix() < n.Notes[j].Updated.Unix()
+                break
+            default:
+                ret = n.Notes[i].Id < n.Notes[j].Id
+        }
+
+        if !p.SortAsc {
+            return !ret
+        }
+        return ret
+    })
 
     for _, note := range n.Notes {
         if p.SkipDone && note.Done {
