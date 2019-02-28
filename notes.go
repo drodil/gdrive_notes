@@ -94,7 +94,6 @@ func (n *Notes) Init(config *Configuration) (error) {
 }
 
 func (n *Notes) SaveNotes() (error) {
-    // TODO: Save only if changed
     return n.syncNotesFile()
 }
 
@@ -205,7 +204,7 @@ func (n *Notes) syncNotesFile() (err error) {
 func (n *Notes) getNotesFile() (file *drive.File, err error) {
     request := n.gdrive.Files.List().PageSize(10)
     request.Spaces("appDataFolder")
-    request.Fields("nextPageToken, files(id, name)")
+    request.Fields("nextPageToken, files(id, name, md5Checksum)")
     r, err := request.Do()
     if err != nil {
         log.Fatalf("Unable to retrieve files: %v", err)
@@ -222,6 +221,13 @@ func (n *Notes) getNotesFile() (file *drive.File, err error) {
 }
 
 func (n *Notes) reloadFromDrive() (err error) {
+    if n.file.Md5Checksum == n.config.Md5Checksum {
+        parse_err := n.parseNotes()
+        if parse_err != nil {
+            return nil
+        }
+    }
+
     export := n.gdrive.Files.Get(n.file.Id)
 
     res, experr := export.Download()
@@ -248,6 +254,8 @@ func (n *Notes) reloadFromDrive() (err error) {
     }
 
     f.Sync()
+    n.config.Md5Checksum = n.file.Md5Checksum
+    n.config.Save()
 
     return n.parseNotes()
 }

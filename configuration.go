@@ -7,7 +7,7 @@ import(
 )
 
 type Configuration struct {
-    Etag string `json:"etag"`
+    Md5Checksum string `json:"md5Checksum"`
     config_file string
 }
 
