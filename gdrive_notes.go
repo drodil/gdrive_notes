@@ -32,6 +32,15 @@ func handleArgs(args []string, n *Notes) (bool, error) {
             n.AddNote(note)
             return true, nil
 
+        case "add":
+           note := Note{}
+           err := note.EditInEditor()
+           if err != nil {
+                return false, err
+           }
+           n.AddNote(note)
+           return true, nil
+
         // Clear all notes
         // TODO: Confirm from user
         case "clear":
