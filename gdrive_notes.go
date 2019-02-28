@@ -136,6 +136,10 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "help":
             printHelp(nil)
             return false, nil
+
+        case "config":
+            c.Configure()
+            return false, nil
        // TODO: Set priority of notes
     }
 
@@ -154,6 +158,7 @@ func printHelp(err error) {
     fmt.Println("Available commands are:")
     fmt.Println("")
     fmt.Println("h|help\t\tPrint this help")
+    fmt.Println("config\t\tConfigure the look&feel")
     fmt.Println("qa <note>\tQuickly add note with default values")
     fmt.Println("e|edit <id>\tEdit note with given id")
     fmt.Println("a|add\t\tAdd new note with $EDITOR")
@@ -165,7 +170,7 @@ func printHelp(err error) {
 }
 
 func main() {
-    config := Configuration{}
+    config := NewConfiguration()
     err := config.Init()
     if err != nil {
         log.Fatalf("Could not set up configuration: %v", err)

@@ -24,16 +24,16 @@ type NotesPrinter struct {
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst := NotesPrinter{}
 
-    inst.UseColor = true
+    inst.UseColor = config.Color
     inst.PrintHeader = true
     inst.SkipDone = true
     inst.ShowDone = true
     inst.ShowCreated = true
     inst.ShowUpdated = false
-    inst.ShowPriority = true
-    inst.ShowDue = false
+    inst.ShowPriority = config.UsePriority
+    inst.ShowDue = config.UseDue
     inst.MaxTitleLength = 30
-    inst.TimeFormat = "02.01.2006 15:04"
+    inst.TimeFormat = config.TimeFormat
     return inst
 }
 
@@ -111,19 +111,16 @@ func (p *NotesPrinter) PrintNote(n *Note) {
 
     if p.ShowDue {
         fmt.Print("\t")
-        // TODO: Create configuration to allow user select format of dates
         fmt.Print(n.Due.Format(p.TimeFormat))
     }
 
     if p.ShowCreated {
         fmt.Print("\t")
-        // TODO: Create configuration to allow user select format of dates
         fmt.Print(n.Created.Format(p.TimeFormat))
     }
 
     if p.ShowUpdated {
         fmt.Print("\t")
-        // TODO: Create configuration to allow user select format of dates
         fmt.Print(n.Updated.Format(p.TimeFormat))
     }
 }
@@ -157,10 +154,15 @@ func (p *NotesPrinter) getPriorityColor(n *Note) (*color.Color) {
 func (p *NotesPrinter) PrintFullNote(n *Note) {
     c := color.New(color.FgHiGreen).Add(color.Underline)
     c.Printf("NOTE %v\n", n.Id)
-    fmt.Print("Priority: ")
-    c = p.getPriorityColor(n)
-    c.Printf("%v\n", n.Priority)
-    fmt.Println("Due: " + n.Due.Format(p.TimeFormat))
+    if p.ShowPriority {
+        fmt.Print("Priority: ")
+        c = p.getPriorityColor(n)
+        c.Printf("%v\n", n.Priority)
+    }
+
+    if p.ShowDue {
+        fmt.Println("Due: " + n.Due.Format(p.TimeFormat))
+    }
     fmt.Println("Created: " + n.Created.Format(p.TimeFormat))
     fmt.Println("Updated: " + n.Updated.Format(p.TimeFormat))
     fmt.Println("----------------")
