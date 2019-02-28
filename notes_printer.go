@@ -33,7 +33,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.PrintHeader = true
     inst.SkipDone = true
     inst.ShowDone = true
-    inst.ShowCreated = true
+    inst.ShowCreated = false
     inst.ShowUpdated = false
     inst.ShowPriority = config.UsePriority
     inst.ShowDue = config.UseDue
@@ -52,26 +52,26 @@ func (p *NotesPrinter) Print(n *Notes) {
         return
     }
 
-    if p.PrintHeader {
-        p.printHeader()
-    }
-
     sort.Slice(n.Notes, func(i, j int) bool {
         ret := false
         switch(p.SortColumn) {
             case "prio":
+                p.ShowPriority = true
                 ret = n.Notes[i].Priority < n.Notes[j].Priority
                 break
             case "title":
                 ret = n.Notes[i].GetTitle() < n.Notes[j].GetTitle()
                 break
             case "due":
+                p.ShowDue = true
                 ret = n.Notes[i].Due.Unix() < n.Notes[j].Due.Unix()
                 break
             case "created":
+                p.ShowCreated = true
                 ret = n.Notes[i].Created.Unix() < n.Notes[j].Created.Unix()
                 break
             case "updated":
+                p.ShowUpdated = true
                 ret = n.Notes[i].Updated.Unix() < n.Notes[j].Updated.Unix()
                 break
             default:
@@ -83,6 +83,10 @@ func (p *NotesPrinter) Print(n *Notes) {
         }
         return ret
     })
+
+    if p.PrintHeader {
+        p.printHeader()
+    }
 
     for _, note := range n.Notes {
         if p.SkipDone && note.Done {
@@ -160,17 +164,23 @@ func (p *NotesPrinter) PrintNote(n *Note) {
 
     if p.ShowDue {
         fmt.Print("\t")
-        fmt.Print(n.Due.Format(p.TimeFormat))
+        if !n.Due.IsZero() {
+           fmt.Print(n.Due.Format(p.TimeFormat))
+        }
     }
 
     if p.ShowCreated {
         fmt.Print("\t")
-        fmt.Print(n.Created.Format(p.TimeFormat))
+        if !n.Created.IsZero() {
+            fmt.Print(n.Created.Format(p.TimeFormat))
+        }
     }
 
     if p.ShowUpdated {
         fmt.Print("\t")
-        fmt.Print(n.Updated.Format(p.TimeFormat))
+        if !n.Updated.IsZero() {
+            fmt.Print(n.Updated.Format(p.TimeFormat))
+        }
     }
 }
 
