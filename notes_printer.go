@@ -4,9 +4,12 @@ import(
     "fmt"
     "strings"
     "strconv"
+
+    "github.com/fatih/color"
 )
 
 type NotesPrinter struct {
+    UseColor bool
     PrintHeader bool
     SkipDone bool
     ShowDone bool
@@ -21,6 +24,7 @@ type NotesPrinter struct {
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst := NotesPrinter{}
 
+    inst.UseColor = true
     inst.PrintHeader = true
     inst.SkipDone = true
     inst.ShowDone = true
@@ -48,28 +52,33 @@ func (p *NotesPrinter) Print(n *Notes) {
 }
 
 func (p *NotesPrinter) printHeader() {
-    fmt.Print("ID\t")
+    c := color.New(color.Bold).Add(color.FgHiCyan)
+    if !p.UseColor {
+        c.DisableColor()
+    }
+
+    c.Print("ID\t")
     if p.ShowDone {
-        fmt.Print("DONE\t")
+        c.Print("DONE\t")
     }
 
     format := "%-" + strconv.Itoa(p.MaxTitleLength) + "v"
-    fmt.Printf(format, "TITLE")
+    c.Printf(format, "TITLE")
 
     if p.ShowPriority {
-        fmt.Print("PRIO\t")
+        c.Print("PRIO\t")
     }
     if p.ShowDue {
-        fmt.Print("DUE\t")
+        c.Print("DUE\t")
     }
     if p.ShowCreated {
-        fmt.Print("CREATED\t")
+        c.Print("CREATED\t")
     }
     if p.ShowUpdated {
-        fmt.Print("UPDATED\t")
+        c.Print("UPDATED\t")
     }
 
-    fmt.Print("\n")
+    c.Print("\n")
 }
 
 func (p *NotesPrinter) PrintNote(n *Note) {
@@ -96,7 +105,8 @@ func (p *NotesPrinter) PrintNote(n *Note) {
     fmt.Printf(format, preview)
     if p.ShowPriority {
         fmt.Print("\t")
-        fmt.Print(n.Priority)
+        c := p.getPriorityColor(n)
+        c.Print(n.Priority)
     }
 
     if p.ShowDue {
@@ -118,9 +128,38 @@ func (p *NotesPrinter) PrintNote(n *Note) {
     }
 }
 
+func (p *NotesPrinter) getPriorityColor(n *Note) (*color.Color) {
+    c := color.New()
+    if !p.UseColor {
+        c.DisableColor()
+    }
+
+    switch(n.Priority) {
+        case 0:
+            fallthrough
+        case 1:
+            c.Add(color.FgHiGreen)
+            break
+        case 2:
+            fallthrough
+        case 3:
+            c.Add(color.FgHiYellow)
+            break
+        case 4:
+            fallthrough
+        case 5:
+            c.Add(color.FgHiRed)
+            break
+    }
+    return c
+}
+
 func (p *NotesPrinter) PrintFullNote(n *Note) {
-    fmt.Printf("NOTE %v\n", n.Id)
-    fmt.Printf("Priority: %v\n", n.Priority)
+    c := color.New(color.FgHiGreen).Add(color.Underline)
+    c.Printf("NOTE %v\n", n.Id)
+    fmt.Print("Priority: ")
+    c = p.getPriorityColor(n)
+    c.Printf("%v\n", n.Priority)
     fmt.Println("Due: " + n.Due.Format(p.TimeFormat))
     fmt.Println("Created: " + n.Created.Format(p.TimeFormat))
     fmt.Println("Updated: " + n.Updated.Format(p.TimeFormat))

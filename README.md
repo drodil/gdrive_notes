@@ -7,6 +7,7 @@ training project.
 
 * [mitchellh/go-homedir](https://github.com/mitchellh/go-homedir)
 * [googleapis/google-api-go-client](https://github.com/googleapis/google-api-go-client)
+* [fatih/color](https://github.com/fatih/color)
 
 ## TODO/Future ideas
 
