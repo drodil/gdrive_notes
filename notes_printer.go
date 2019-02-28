@@ -224,7 +224,7 @@ func (p *NotesPrinter) PrintFullNote(n *Note) {
     }
     fmt.Println("Created: " + n.Created.Format(p.TimeFormat))
     fmt.Println("Updated: " + n.Updated.Format(p.TimeFormat))
-    fmt.Println("----------------")
+    fmt.Print("\n")
     fmt.Print(n.Content)
-    fmt.Println("----------------")
+    fmt.Print("\n")
 }
