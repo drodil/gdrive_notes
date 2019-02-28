@@ -120,8 +120,9 @@ func (n *Notes) getClient(config *oauth2.Config) *http.Client {
 
 func (n *Notes) getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
     authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+    fmt.Println("Google Drive setup")
     fmt.Printf("Go to the following link in your browser then type the "+
-            "authorization code: \n%v\n", authURL)
+            "authorization code: \n\n%v\n", authURL)
 
     var authCode string
     if _, err := fmt.Scan(&authCode); err != nil {
