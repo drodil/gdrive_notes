@@ -38,6 +38,11 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
 }
 
 func (p *NotesPrinter) Print(n *Notes) {
+    if len(n.Notes) == 0 {
+        fmt.Println("No notes")
+        return
+    }
+
     if p.PrintHeader {
         p.printHeader()
     }

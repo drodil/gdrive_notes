@@ -60,10 +60,18 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             return updated, nil
 
         // Clear all notes
-        // TODO: Confirm from user
         case "clear":
-            n.Notes = n.Notes[:0]
-            return true, nil
+            for {
+                ret, err := YesNoQuestion("Are you sure you want to delete all notes [y/n]? ")
+                if err == nil {
+                    if ret {
+                        n.Notes = n.Notes[:0]
+                        fmt.Println("All notes have been deleted")
+                        return true, nil
+                    }
+                    return false, nil
+                }
+            }
 
         // List all notes
         // TODO: Additional parameters for ordering etc.
