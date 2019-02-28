@@ -32,6 +32,8 @@ func handleArgs(args []string, n *Notes) (bool, error) {
             n.AddNote(note)
             return true, nil
 
+        case "a":
+            fallthrough
         case "add":
             note := Note{Created: now, Updated: now, Priority: 5}
             updated, err := note.EditInEditor()
@@ -118,17 +120,36 @@ func handleArgs(args []string, n *Notes) (bool, error) {
             }
 
             return note.EditInEditor()
-
+        case "h":
+            fallthrough
+        case "help":
+            printHelp(nil)
+            return false, nil
        // TODO: Set priority of notes
     }
 
     return false, errors.New("Invalid command")
 }
 
-func printHelp() {
+func printHelp(err error) {
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    fmt.Println("------------------")
     fmt.Println("Google Drive Notes")
     fmt.Println("------------------")
-    // TODO: Create help for commands
+    fmt.Println("")
+    fmt.Println("Available commands are:")
+    fmt.Println("")
+    fmt.Println("h|help\t\tPrint this help")
+    fmt.Println("qa <note>\tQuickly add note with default values")
+    fmt.Println("e|edit <id>\tEdit note with given id")
+    fmt.Println("a|add\t\tAdd new note with $EDITOR")
+    fmt.Println("clear\t\tDelete all notes")
+    fmt.Println("ls|list\t\tList all notes")
+    fmt.Println("td|todo\t\tList all not-done notes")
+    fmt.Println("md|done <id>\tMark note done with given id")
 }
 
 func main() {
@@ -148,7 +169,7 @@ func main() {
 
     update, err := handleArgs(os.Args[1:], &notes)
     if err != nil {
-        printHelp()
+        printHelp(err)
         os.Exit(0)
     }
 
