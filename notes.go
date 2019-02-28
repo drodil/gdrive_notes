@@ -10,8 +10,6 @@ import (
     "errors"
     "time"
 
-    "github.com/mitchellh/go-homedir"
-
     "golang.org/x/net/context"
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
@@ -56,13 +54,16 @@ type Notes struct {
     app_folder string
     file *drive.File
     max_id uint
+    config *Configuration
 }
 
-func (n *Notes) Init() (error) {
-    err := n.createAppFolder();
+func (n *Notes) Init(config *Configuration) (error) {
+    n.config = config
+    app_folder, err := CreateAppFolder();
     if err != nil {
         return err
     }
+    n.app_folder = app_folder
 
     err = n.setUpDrive()
     if err != nil {
@@ -100,17 +101,6 @@ func (n *Notes) SaveNotes() (error) {
 func (n *Notes) AddNote(note Note) {
     note.Id = n.max_id + 1
     n.Notes = append(n.Notes, note)
-}
-
-func (n *Notes) createAppFolder() (error) {
-    home, err := homedir.Dir()
-    if(err != nil) {
-        return err
-    }
-
-    os.Mkdir(home + "/.gdrive_notes", 0600)
-    n.app_folder = home + "/.gdrive_notes"
-    return nil
 }
 
 func (n *Notes) createNotesFile() (file *drive.File, err error) {

@@ -100,8 +100,19 @@ func printHelp() {
 }
 
 func main() {
+    config := Configuration{}
+    err := config.Init()
+    if err != nil {
+        log.Fatalf("Could not set up configuration: %v", err)
+        os.Exit(1)
+    }
+
     notes := Notes{}
-    notes.Init()
+    err = notes.Init(&config)
+    if err != nil {
+        log.Fatalf("Could not set up Google Drive: %v", err)
+        os.Exit(1)
+    }
 
     update, err := handleArgs(os.Args[1:], &notes)
     if err != nil {
