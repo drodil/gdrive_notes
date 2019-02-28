@@ -22,13 +22,17 @@ func getNoteFromArg(arg string, n *Notes) (*Note) {
 
 func handleListArgs(args []string, printer *NotesPrinter) {
     for i, arg := range args {
-        if (arg == "--order" || arg == "-o") && len(args) > i + 1{
+        if (arg == "--order" || arg == "-o") && len(args) > i + 1 {
             col := args[i+1]
             if strings.HasPrefix(col, "-") {
                 printer.SortAsc = false
                 col = col[1:]
             }
             printer.SortColumn = col
+        }
+
+        if (arg == "--search" || arg == "-s") && len(args) > i + 1 {
+            printer.SearchStr = args[i+1]
         }
     }
 }
@@ -225,6 +229,7 @@ func printHelp(err error) {
     fmt.Println("Additional parameters for listing:")
     fmt.Println("--order|-o <column>\tOrder by column. Has to be one of the following:")
     fmt.Println("\t\t\ttitle,prio,created,updated,due")
+    fmt.Println("--search|-s <string>\tSearch for notes with given content")
 }
 
 func main() {

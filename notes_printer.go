@@ -22,6 +22,7 @@ type NotesPrinter struct {
     TimeFormat string
     SortColumn string
     SortAsc bool
+    SearchStr string
 }
 
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
@@ -39,6 +40,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.TimeFormat = config.TimeFormat
     inst.SortColumn = "Id"
     inst.SortAsc = true
+    inst.SearchStr = ""
     return inst
 }
 
@@ -84,6 +86,10 @@ func (p *NotesPrinter) Print(n *Notes) {
         if p.SkipDone && note.Done {
             continue
         }
+        if len(p.SearchStr) > 0 && !strings.Contains(note.Content, p.SearchStr) {
+            continue
+        }
+
         p.PrintNote(&note)
         fmt.Print("\n")
     }
