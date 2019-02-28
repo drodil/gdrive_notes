@@ -151,6 +151,25 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
 
             return note.EditInEditor()
 
+        case "p":
+            fallthrough
+        case "prio":
+            if len(args) < 2 {
+                return false, errors.New("Give note id and new priority")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+            prio, err := strconv.ParseUint(args[1], 0, 32)
+            if err != nil {
+                return false, errors.New("Invalid priority given")
+            }
+            note.Priority = uint(prio)
+            return true, nil
+
         case "s":
             fallthrough
         case "show":
@@ -197,7 +216,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "config":
             c.Configure()
             return false, nil
-       // TODO: Set priority of notes
     }
 
     return false, errors.New("Invalid command")
@@ -223,6 +241,7 @@ func printHelp(err error) {
     fmt.Println("e|edit <id>\t\tEdit note with given id")
     fmt.Println("a|add\t\t\tAdd new note with $EDITOR")
     fmt.Println("md|done <id>\t\tMark note done with given id")
+    fmt.Println("p|prio <id> <prio>\tSet priority of the note")
     fmt.Println("")
     fmt.Println("DELETING:")
     fmt.Println("clear\t\t\tDelete all notes")
