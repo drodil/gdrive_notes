@@ -8,6 +8,8 @@ import (
     "time"
     "os/exec"
     "strings"
+    "crypto/md5"
+    "encoding/hex"
 )
 
 // Single NOTE functionality
@@ -46,21 +48,22 @@ func (n *Note) Print() {
     fmt.Print(n.Created.Format("2006-01-02 15:04"))
 }
 
-func (n *Note) EditInEditor() (error) {
+func (n *Note) EditInEditor() (bool, error) {
     editor, ok := os.LookupEnv("EDITOR")
     if !ok {
-        return errors.New("You don't have EDITOR variable set!")
+        return false, errors.New("You don't have EDITOR variable set!")
     }
 
     fpath := os.TempDir() + "/" + RandomString(10) + ".md"
     f, err := os.Create(fpath)
     if err != nil {
-        return err
+        return false, err
     }
 
+    startHash := n.getMD5()
     _, err = f.WriteString(n.Content)
     if err != nil {
-        return err
+        return false, err
     }
 
     f.Close()
@@ -70,22 +73,31 @@ func (n *Note) EditInEditor() (error) {
     cmd.Stderr = os.Stderr
     err = cmd.Start()
     if err != nil {
-        return err
+        return false, err
     }
 
     err = cmd.Wait()
     if err != nil {
-        return err
+        return false, err
     }
 
     dat, err := ioutil.ReadFile(fpath)
     if err != nil {
-        return err
+        return false, err
     }
 
+    updated := false
     n.Content = string(dat)
+    if startHash != n.getMD5() {
+        n.Updated = time.Now()
+        updated = true
+    }
 
-    return nil
+    return updated, nil
 }
 
-
+func (n *Note) getMD5() (string) {
+    hasher := md5.New()
+    hasher.Write([]byte(n.Content))
+    return hex.EncodeToString(hasher.Sum(nil))
+}

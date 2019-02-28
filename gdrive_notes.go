@@ -18,6 +18,7 @@ func handleArgs(args []string, n *Notes) (bool, error) {
 
     command := args[0]
     args = args[1:]
+    now := time.Now()
 
     switch command {
         // Quick add note
@@ -27,19 +28,22 @@ func handleArgs(args []string, n *Notes) (bool, error) {
             }
 
             content := strings.Join(args, " ")
-            now := time.Now()
             note := Note{Content: content, Priority: 5, Done: false, Created: now, Updated: now}
             n.AddNote(note)
             return true, nil
 
         case "add":
-           note := Note{}
-           err := note.EditInEditor()
-           if err != nil {
+            note := Note{Created: now, Updated: now, Priority: 5}
+            updated, err := note.EditInEditor()
+            if err != nil {
                 return false, err
-           }
-           n.AddNote(note)
-           return true, nil
+            }
+
+            if updated {
+                n.AddNote(note)
+            }
+
+            return updated, nil
 
         // Clear all notes
         // TODO: Confirm from user
@@ -92,6 +96,7 @@ func handleArgs(args []string, n *Notes) (bool, error) {
                 return false, errors.New("Could not find note with id")
             }
             note.Done = true
+            note.Updated = now
             return true, nil
 
         case "e":
@@ -112,8 +117,7 @@ func handleArgs(args []string, n *Notes) (bool, error) {
                 return false, errors.New("Could not find note with id")
             }
 
-            note.EditInEditor()
-            return true, nil
+            return note.EditInEditor()
 
        // TODO: Set priority of notes
     }
