@@ -6,6 +6,7 @@ import (
     "errors"
     "time"
     "os/exec"
+    "strings"
     "crypto/md5"
     "encoding/hex"
 )
@@ -19,6 +20,11 @@ type Note struct {
     Created time.Time `json:"created"`
     Updated time.Time `json:"updated"`
     Due time.Time     `json:"due"`
+}
+
+func (n *Note) GetTitle() (string) {
+    parts := strings.Split(n.Content, "\n")
+    return parts[0]
 }
 
 func (n *Note) EditInEditor() (bool, error) {

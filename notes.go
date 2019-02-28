@@ -65,9 +65,10 @@ func (n *Notes) SaveNotes() (error) {
     return n.syncNotesFile()
 }
 
-func (n *Notes) AddNote(note Note) {
+func (n *Notes) AddNote(note Note) (uint) {
     note.Id = n.max_id + 1
     n.Notes = append(n.Notes, note)
+    return note.Id
 }
 
 func (n *Notes) FindNote(id uint) (*Note) {
