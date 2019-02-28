@@ -108,7 +108,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
 
             note.Done = true
             note.Updated = now
-            fmt.Printf("Note %v is now done\n", note.Id)
+            fmt.Printf("Note \"%v\" with id %v is now done\n", note.GetTitle(), note.Id)
             return true, nil
 
         case "e":
@@ -141,6 +141,26 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             printer.PrintFullNote(note)
 
             return false, nil
+
+        case "rm":
+            fallthrough
+        case "remove":
+            if len(args) < 1 {
+                return false, errors.New("Give note id")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+            err := n.DeleteNote(note.Id)
+            if err != nil {
+                return false, err
+            }
+
+            fmt.Printf("Removed note \"%v\" with id %v\n", note.GetTitle(), note.Id)
+            return true, nil
 
         case "h":
             fallthrough

@@ -82,6 +82,23 @@ func (n *Notes) FindNote(id uint) (*Note) {
     return nil
 }
 
+func (n *Notes) DeleteNote(id uint) (error) {
+    found := false
+    for i := 0; i < len(n.Notes); i++ {
+        note := &n.Notes[i]
+        if note.Id == id {
+            n.Notes = append(n.Notes[:i], n.Notes[i+1:]...)
+            i--
+            found = true
+        }
+    }
+
+    if !found {
+        return errors.New("Could not find note with given id")
+    }
+    return nil
+}
+
 func (n *Notes) createNotesFile() (file *drive.File, err error) {
     new_file := &drive.File{Name: "notes.json", Parents: []string{"appDataFolder"}}
     ret, err := n.gdrive.Files.Create(new_file).Do()
