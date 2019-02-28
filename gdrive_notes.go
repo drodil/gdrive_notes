@@ -10,6 +10,16 @@ import (
     "time"
 )
 
+func getNoteFromArg(arg string, n *Notes) (*Note) {
+    id, err := strconv.ParseUint(arg, 0, 32)
+
+    if err != nil {
+        return nil
+    }
+
+    return n.FindNote(uint(id))
+}
+
 func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
     // TODO: Return nil instead error when GUI is available and start that
     if len(args) == 0 {
@@ -81,16 +91,11 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
                 return false, errors.New("Give note id")
             }
 
-            id, err := strconv.ParseUint(args[0], 0, 32)
-
-            if err != nil {
-                return false, err
-            }
-
-            note := n.FindNote(uint(id))
+            note := getNoteFromArg(args[0], n)
             if note == nil {
                 return false, errors.New("Could not find note with id")
             }
+
             note.Done = true
             note.Updated = now
             return true, nil
@@ -102,18 +107,30 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
                 return false, errors.New("Give note id")
             }
 
-            id, err := strconv.ParseUint(args[0], 0, 32)
-
-            if err != nil {
-                return false, err
-            }
-
-            note := n.FindNote(uint(id))
+            note := getNoteFromArg(args[0], n)
             if note == nil {
                 return false, errors.New("Could not find note with id")
             }
 
             return note.EditInEditor()
+
+        case "s":
+            fallthrough
+        case "show":
+            if len(args) < 1 {
+                return false, errors.New("Give note id")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+            printer := NewNotesPrinter(c)
+            printer.PrintFullNote(note)
+
+            return false, nil
+
         case "h":
             fallthrough
         case "help":
@@ -144,6 +161,7 @@ func printHelp(err error) {
     fmt.Println("ls|list\t\tList all notes")
     fmt.Println("td|todo\t\tList all not-done notes")
     fmt.Println("md|done <id>\tMark note done with given id")
+    fmt.Println("s|show <id>\tShow note contents with given id")
 }
 
 func main() {

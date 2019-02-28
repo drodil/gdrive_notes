@@ -117,3 +117,14 @@ func (p *NotesPrinter) PrintNote(n *Note) {
         fmt.Print(n.Updated.Format(p.TimeFormat))
     }
 }
+
+func (p *NotesPrinter) PrintFullNote(n *Note) {
+    fmt.Printf("NOTE %v\n", n.Id)
+    fmt.Printf("Priority: %v\n", n.Priority)
+    fmt.Println("Due: " + n.Due.Format(p.TimeFormat))
+    fmt.Println("Created: " + n.Created.Format(p.TimeFormat))
+    fmt.Println("Updated: " + n.Updated.Format(p.TimeFormat))
+    fmt.Println("----------------")
+    fmt.Print(n.Content)
+    fmt.Println("----------------")
+}
