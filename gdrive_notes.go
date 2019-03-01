@@ -106,7 +106,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
 
         // List all notes
-        // TODO: Additional parameters for ordering etc.
         case "list":
             fallthrough
         case "ls":
@@ -117,7 +116,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             return false, nil
 
         // List only not done notes
-        // TODO: Additional parameters for ordering etc.
         case "td":
             fallthrough
         case "todo":
