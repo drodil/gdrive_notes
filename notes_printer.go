@@ -26,6 +26,7 @@ type NotesPrinter struct {
     SearchStr string
     PrioFilter uint
     TagFilter string
+    PrintDetails bool
     idSize int
     doneSize int
     titleSize int
@@ -50,6 +51,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.SearchStr = ""
     inst.TagFilter = ""
     inst.PrioFilter = 0
+    inst.PrintDetails = false
 
     inst.idSize = 6
     inst.doneSize = 6
@@ -119,6 +121,10 @@ func (p *NotesPrinter) Print(n *Notes) {
         return ret
     })
 
+    if p.PrintDetails {
+        p.PrintHeader = false
+    }
+
     if p.PrintHeader {
         p.printHeader()
     }
@@ -138,8 +144,12 @@ func (p *NotesPrinter) Print(n *Notes) {
             continue
         }
 
-        p.PrintNote(&note)
-        fmt.Print("\n")
+        if p.PrintDetails {
+           p.PrintFullNote(&note)
+        } else {
+            p.PrintNote(&note)
+            fmt.Print("\n")
+        }
         notesPrinted = true
     }
 

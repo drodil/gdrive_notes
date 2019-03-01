@@ -45,6 +45,10 @@ func handleListArgs(args []string, printer *NotesPrinter) {
         if (arg == "--tag" || arg == "-t") && len(args) > i + 1 {
             printer.TagFilter = args[i+1]
         }
+
+        if arg == "-la" {
+            printer.PrintDetails = true
+        }
     }
 }
 
@@ -326,6 +330,7 @@ func printHelp(err error) {
     fmt.Println("--search|-s <string>\tSearch for notes with given content")
     fmt.Println("--prio|-p <int>\tSearch for notes with this or greater priority")
     fmt.Println("--tag|-t <tag>\tSearch for notes with this tag")
+    fmt.Println("-la\t\tPrint whole notes instead table")
 }
 
 func main() {
