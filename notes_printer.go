@@ -5,6 +5,7 @@ import(
     "strings"
     "strconv"
     "sort"
+    "time"
 
     "github.com/fatih/color"
 )
@@ -24,6 +25,11 @@ type NotesPrinter struct {
     SortAsc bool
     SearchStr string
     PrioFilter uint
+    idSize int
+    doneSize int
+    titleSize int
+    prioSize int
+    timeSize int
 }
 
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
@@ -37,13 +43,44 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.ShowUpdated = false
     inst.ShowPriority = config.UsePriority
     inst.ShowDue = config.UseDue
-    inst.MaxTitleLength = 30
     inst.TimeFormat = config.TimeFormat
     inst.SortColumn = "Id"
     inst.SortAsc = true
     inst.SearchStr = ""
     inst.PrioFilter = 0
+
+    inst.idSize = 6
+    inst.doneSize = 6
+    inst.titleSize = 30
+    inst.timeSize = 12
+    inst.prioSize = 4
+
     return inst
+}
+
+func (p *NotesPrinter) calculateColumnWidths(n *Notes) {
+    now := time.Now()
+    p.timeSize = len(now.Format(p.TimeFormat)) + 2
+    p.idSize = len(string(n.GetMaxId())) + 3
+
+    w := GetScreenWidth() - 2
+    w -= p.idSize
+    if p.ShowDone {
+        w -= p.doneSize
+    }
+    if p.ShowPriority {
+        w -= p.prioSize
+    }
+    if p.ShowDue {
+        w -= p.timeSize
+    }
+    if p.ShowCreated {
+        w -= p.timeSize
+    }
+    if p.ShowUpdated {
+        w -= p.timeSize
+    }
+    p.titleSize = w
 }
 
 func (p *NotesPrinter) Print(n *Notes) {
@@ -52,6 +89,7 @@ func (p *NotesPrinter) Print(n *Notes) {
         return
     }
 
+    p.calculateColumnWidths(n)
     sort.Slice(n.Notes, func(i, j int) bool {
         ret := false
         switch(p.SortColumn) {
@@ -102,6 +140,7 @@ func (p *NotesPrinter) Print(n *Notes) {
         p.PrintNote(&note)
         fmt.Print("\n")
     }
+    fmt.Println(strings.Repeat("-", GetScreenWidth()))
 }
 
 func (p *NotesPrinter) printHeader() {
@@ -110,77 +149,79 @@ func (p *NotesPrinter) printHeader() {
         c.DisableColor()
     }
 
-    c.Print("ID\t")
+    fmt.Println(strings.Repeat("-", GetScreenWidth()))
+
+    c.Printf(" %-" + strconv.Itoa(p.idSize) + "v", "ID")
     if p.ShowDone {
-        c.Print("DONE\t")
+        c.Printf("%-6v", "DONE")
     }
 
-    format := "%-" + strconv.Itoa(p.MaxTitleLength) + "v"
+    format := "%-" + strconv.Itoa(p.titleSize) + "v"
     c.Printf(format, "TITLE")
 
     if p.ShowPriority {
-        c.Print("PRIO\t")
+        c.Printf("%-" + strconv.Itoa(p.prioSize) + "v", "PRIO")
     }
     if p.ShowDue {
-        c.Print("DUE\t")
+        c.Printf("%-" + strconv.Itoa(p.timeSize) + "v", "DUE")
     }
     if p.ShowCreated {
-        c.Print("CREATED\t")
+        c.Printf("%-" + strconv.Itoa(p.timeSize) + "v", "CREATED")
     }
     if p.ShowUpdated {
-        c.Print("UPDATED\t")
+        c.Printf("%-" + strconv.Itoa(p.timeSize) + "v", "UPDATED")
     }
 
     c.Print("\n")
+    fmt.Println(strings.Repeat("-", GetScreenWidth()))
 }
 
 func (p *NotesPrinter) PrintNote(n *Note) {
-    fmt.Print(n.Id)
-    fmt.Print("\t")
+    fmt.Printf(" %-" + strconv.Itoa(p.idSize) + "v", n.Id)
 
     if p.ShowDone {
         if !n.Done {
-            fmt.Print("[ ]")
+            fmt.Printf("%-" + strconv.Itoa(p.doneSize) + "v", "[ ]")
         } else {
-            fmt.Print("[x]")
+            fmt.Printf("%-" + strconv.Itoa(p.doneSize) + "v", "[x]")
         }
-        fmt.Print("\t")
     }
 
-    fmt.Print(" ")
     parts := strings.Split(n.Content, "\n")
     preview := parts[0]
-    if len(preview) > (p.MaxTitleLength - 3) {
-        preview = preview[0:(p.MaxTitleLength-3)] + "..."
+    if len(preview) > (p.titleSize - 3) {
+        preview = preview[0:(p.titleSize-3)] + "..."
     }
-    format := "%-" + strconv.Itoa(p.MaxTitleLength) + "v"
+    format := "%-" + strconv.Itoa(p.titleSize) + "v"
 
     fmt.Printf(format, preview)
     if p.ShowPriority {
-        fmt.Print("\t")
         c := p.getPriorityColor(n)
-        c.Print(n.Priority)
+        c.Printf("%-" + strconv.Itoa(p.prioSize) + "v", n.Priority)
     }
 
     if p.ShowDue {
-        fmt.Print("\t")
+        due := ""
         if !n.Due.IsZero() {
-           fmt.Print(n.Due.Format(p.TimeFormat))
+           due = n.Due.Format(p.TimeFormat)
         }
+        fmt.Printf("%-" + strconv.Itoa(p.timeSize) + "v", due)
     }
 
     if p.ShowCreated {
-        fmt.Print("\t")
+        created := ""
         if !n.Created.IsZero() {
-            fmt.Print(n.Created.Format(p.TimeFormat))
+            created = n.Created.Format(p.TimeFormat)
         }
+        fmt.Printf("%-" + strconv.Itoa(p.timeSize) + "v", created)
     }
 
     if p.ShowUpdated {
-        fmt.Print("\t")
+        updated := ""
         if !n.Updated.IsZero() {
-            fmt.Print(n.Updated.Format(p.TimeFormat))
+            updated = n.Updated.Format(p.TimeFormat)
         }
+        fmt.Printf("%-" + strconv.Itoa(p.timeSize) + "v", updated)
     }
 }
 

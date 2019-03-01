@@ -103,6 +103,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             fallthrough
         case "ls":
             printer := NewNotesPrinter(c)
+            printer.SkipDone = false
             handleListArgs(args, &printer)
             printer.Print(n)
             return false, nil
@@ -199,12 +200,14 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
                 return false, errors.New("Could not find note with id")
             }
 
+            id := note.Id
+            title := note.GetTitle()
             err := n.DeleteNote(note.Id)
             if err != nil {
                 return false, err
             }
 
-            fmt.Printf("Removed note \"%v\" with id %v\n", note.GetTitle(), note.Id)
+            fmt.Printf("Removed note \"%v\" with id %v\n", title, id)
             return true, nil
 
         case "h":

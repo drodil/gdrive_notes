@@ -82,6 +82,17 @@ func (n *Notes) FindNote(id uint) (*Note) {
     return nil
 }
 
+func (n *Notes) GetMaxId() (uint) {
+    var maxId uint
+    for _, note := range n.Notes {
+        if note.Id > maxId {
+            maxId = note.Id
+        }
+    }
+
+    return maxId
+}
+
 func (n *Notes) DeleteNote(id uint) (error) {
     found := false
     for i := 0; i < len(n.Notes); i++ {

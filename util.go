@@ -6,6 +6,7 @@ import (
     "bufio"
     "errors"
     "fmt"
+    "golang.org/x/crypto/ssh/terminal"
 
     "github.com/mitchellh/go-homedir"
 )
@@ -52,4 +53,12 @@ func YesNoQuestion(question string) (bool, error) {
         return false, nil
     }
     return false, errors.New("Invalid input")
+}
+
+func GetScreenWidth() (int) {
+    width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+    if err != nil {
+        return 0
+    }
+    return width
 }

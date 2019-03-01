@@ -11,11 +11,12 @@ training project.
 
 ## TODO/Future ideas
 
-* Editing of notes (content, priority, due date etc.)
-* GUI for handling notes
+* Backup configuration to gdrive also
+* CLI GUI for handling notes
     * vim keymappings to navigate
     * Ordering of the notes
     * Finding notes
     * Marking notes done
 * Web UI
 * Android/iOS application
+* Vim plugin
