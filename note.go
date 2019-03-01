@@ -23,6 +23,7 @@ type Note struct {
     Tags []string `json:"tags"`
 }
 
+// Returns title of the note
 func (n *Note) GetTitle() (string) {
     parts := strings.Split(n.Content, "\n")
     return parts[0]

@@ -110,6 +110,22 @@ func (n *Notes) DeleteNote(id uint) (error) {
     return nil
 }
 
+func (n *Notes) GetTags() (map[string]int) {
+    ret := map[string]int{}
+    for i := 0; i < len(n.Notes); i++ {
+        note := &n.Notes[i]
+        for _, tag := range note.Tags {
+            _, ok := ret[tag]
+            if ok {
+                ret[tag] = ret[tag] + 1
+            } else {
+                ret[tag] = 1
+            }
+        }
+    }
+    return ret
+}
+
 func (n *Notes) createNotesFile() (file *drive.File, err error) {
     new_file := &drive.File{Name: "notes.json", Parents: []string{"appDataFolder"}}
     ret, err := n.gdrive.Files.Create(new_file).Do()

@@ -264,7 +264,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
                 return false, errors.New("Could not find note with id")
             }
 
-
             ret := note.RemoveTag(args[1])
             if ret {
                 fmt.Printf("Removed tag \"%v\" for note %v\n", args[1], note.Id)
@@ -273,6 +272,18 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
             return ret, nil
 
+        case "tags":
+            tags := n.GetTags()
+            if len(tags) == 0 {
+                fmt.Println("No tags in any notes")
+                return false, nil
+            }
+
+            fmt.Println("The following tags were found from notes:")
+            for tag, v := range tags {
+                fmt.Printf("%v (%v notes)\n", tag, v)
+            }
+            return false, nil
 
         case "h":
             fallthrough
@@ -285,7 +296,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             return false, nil
     }
 
-    return false, errors.New("Invalid command")
+    return false, errors.New("Invalid command: " + command)
 }
 
 func printHelp(err error) {
@@ -321,6 +332,7 @@ func printHelp(err error) {
     fmt.Println("ls|list\t\t\tList all notes")
     fmt.Println("td|todo\t\t\tList all not-done notes")
     fmt.Println("s|show <id>\t\tShow note contents with given id")
+    fmt.Println("tags\t\t\tShow all tags assigned to notes")
     fmt.Println("")
     fmt.Println("Additional parameters for listing:")
     fmt.Println("--order|-o <column>\tOrder by column. Has to be one of the following:")
