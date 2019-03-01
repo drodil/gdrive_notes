@@ -17,6 +17,7 @@ training project.
     * Ordering of the notes
     * Finding notes
     * Marking notes done
+    * Check https://github.com/nsf/termbox-go
 * Web UI
 * Android/iOS application
 * Vim plugin
