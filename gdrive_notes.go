@@ -41,6 +41,10 @@ func handleListArgs(args []string, printer *NotesPrinter) {
                 printer.PrioFilter = uint(prio)
             }
         }
+
+        if (arg == "--tag" || arg == "-t") && len(args) > i + 1 {
+            printer.TagFilter = args[i+1]
+        }
     }
 }
 
@@ -210,6 +214,64 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             fmt.Printf("Removed note \"%v\" with id %v\n", title, id)
             return true, nil
 
+        case "ct":
+            fallthrough
+        case "ctags":
+            if len(args) < 1 {
+                return false, errors.New("Give note id")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+            note.ClearTags()
+            fmt.Printf("Cleared all tags from note %v\n", note.Id)
+            return true, nil
+
+        case "t":
+            fallthrough
+        case "tag":
+            if len(args) < 2 {
+                return false, errors.New("Give note id and the tag")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+
+            ret := note.AddTag(args[1])
+            if ret {
+                fmt.Printf("Added tag \"%v\" for note %v\n", args[1], note.Id)
+            } else {
+                fmt.Printf("Note %v already had tag \"%v\"\n", note.Id, args[1])
+            }
+            return ret, nil
+
+        case "rt":
+            fallthrough
+        case "rtag":
+            if len(args) < 2 {
+                return false, errors.New("Give note id and the tag")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+
+            ret := note.RemoveTag(args[1])
+            if ret {
+                fmt.Printf("Removed tag \"%v\" for note %v\n", args[1], note.Id)
+            } else {
+                fmt.Printf("Note %v does not have tag \"%v\"\n", note.Id, args[1])
+            }
+            return ret, nil
+
+
         case "h":
             fallthrough
         case "help":
@@ -245,6 +307,9 @@ func printHelp(err error) {
     fmt.Println("a|add\t\t\tAdd new note with $EDITOR")
     fmt.Println("md|done <id>\t\tMark note done with given id")
     fmt.Println("p|prio <id> <prio>\tSet priority of the note")
+    fmt.Println("t|tag <id> <tag>\tAdd tag for note with given id")
+    fmt.Println("rt|rtag <id> <tag>\tRemote tag from note with given id")
+    fmt.Println("ct|ctags <id>\t\tRemove all tags from note with given id")
     fmt.Println("")
     fmt.Println("DELETING:")
     fmt.Println("clear\t\t\tDelete all notes")
@@ -260,6 +325,7 @@ func printHelp(err error) {
     fmt.Println("\t\t\ttitle,prio,created,updated,due")
     fmt.Println("--search|-s <string>\tSearch for notes with given content")
     fmt.Println("--prio|-p <int>\tSearch for notes with this or greater priority")
+    fmt.Println("--tag|-t <tag>\tSearch for notes with this tag")
 }
 
 func main() {

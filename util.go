@@ -6,8 +6,10 @@ import (
     "bufio"
     "errors"
     "fmt"
+    "strings"
     "golang.org/x/crypto/ssh/terminal"
 
+    "github.com/fatih/color"
     "github.com/mitchellh/go-homedir"
 )
 
@@ -61,4 +63,9 @@ func GetScreenWidth() (int) {
         return 0
     }
     return width
+}
+
+func PrintVerticalLine() {
+    c := color.New(color.FgHiBlack)
+    c.Println(strings.Repeat("─", GetScreenWidth()))
 }

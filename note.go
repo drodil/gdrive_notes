@@ -20,11 +20,45 @@ type Note struct {
     Created time.Time `json:"created"`
     Updated time.Time `json:"updated"`
     Due time.Time     `json:"due"`
+    Tags []string `json:"tags"`
 }
 
 func (n *Note) GetTitle() (string) {
     parts := strings.Split(n.Content, "\n")
     return parts[0]
+}
+
+func (n *Note) HasTag(tag string) (bool) {
+    for _, t := range n.Tags {
+        if t == tag {
+            return true
+        }
+    }
+    return false
+}
+
+func (n *Note) AddTag(tag string) (bool) {
+    if !n.HasTag(tag) {
+        n.Tags = append(n.Tags, tag)
+        return true
+    }
+    return false
+}
+
+func (n *Note) RemoveTag(tag string) (bool) {
+    for i := 0; i < len(n.Tags); i++ {
+        t := n.Tags[i]
+        if t == tag {
+            n.Tags = append(n.Tags[:i], n.Tags[i+1:]...)
+            return true
+        }
+    }
+
+    return false
+}
+
+func (n *Note) ClearTags() {
+    n.Tags = n.Tags[:0]
 }
 
 func (n *Note) EditInEditor() (bool, error) {

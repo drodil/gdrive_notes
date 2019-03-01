@@ -25,6 +25,7 @@ type NotesPrinter struct {
     SortAsc bool
     SearchStr string
     PrioFilter uint
+    TagFilter string
     idSize int
     doneSize int
     titleSize int
@@ -47,6 +48,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.SortColumn = "Id"
     inst.SortAsc = true
     inst.SearchStr = ""
+    inst.TagFilter = ""
     inst.PrioFilter = 0
 
     inst.idSize = 6
@@ -84,11 +86,6 @@ func (p *NotesPrinter) calculateColumnWidths(n *Notes) {
 }
 
 func (p *NotesPrinter) Print(n *Notes) {
-    if len(n.Notes) == 0 {
-        fmt.Println("No notes")
-        return
-    }
-
     p.calculateColumnWidths(n)
     sort.Slice(n.Notes, func(i, j int) bool {
         ret := false
@@ -126,6 +123,7 @@ func (p *NotesPrinter) Print(n *Notes) {
         p.printHeader()
     }
 
+    notesPrinted := false
     for _, note := range n.Notes {
         if p.SkipDone && note.Done {
             continue
@@ -136,11 +134,20 @@ func (p *NotesPrinter) Print(n *Notes) {
         if p.ShowPriority && note.Priority < p.PrioFilter {
             continue
         }
+        if len(p.TagFilter) > 0 && !note.HasTag(p.TagFilter) {
+            continue
+        }
 
         p.PrintNote(&note)
         fmt.Print("\n")
+        notesPrinted = true
     }
-    fmt.Println(strings.Repeat("-", GetScreenWidth()))
+
+    if !notesPrinted {
+        fmt.Println("No notes")
+    }
+
+    PrintVerticalLine()
 }
 
 func (p *NotesPrinter) printHeader() {
@@ -149,7 +156,7 @@ func (p *NotesPrinter) printHeader() {
         c.DisableColor()
     }
 
-    fmt.Println(strings.Repeat("-", GetScreenWidth()))
+    PrintVerticalLine()
 
     c.Printf(" %-" + strconv.Itoa(p.idSize) + "v", "ID")
     if p.ShowDone {
@@ -173,7 +180,7 @@ func (p *NotesPrinter) printHeader() {
     }
 
     c.Print("\n")
-    fmt.Println(strings.Repeat("-", GetScreenWidth()))
+    PrintVerticalLine()
 }
 
 func (p *NotesPrinter) PrintNote(n *Note) {
@@ -253,7 +260,8 @@ func (p *NotesPrinter) getPriorityColor(n *Note) (*color.Color) {
 
 func (p *NotesPrinter) PrintFullNote(n *Note) {
     c := color.New(color.FgHiGreen).Add(color.Underline)
-    c.Printf("NOTE %v\n", n.Id)
+    PrintVerticalLine()
+    c.Printf("NOTE %v\n\n", n.Id)
     if p.ShowPriority {
         fmt.Print("Priority: ")
         c = p.getPriorityColor(n)
@@ -265,7 +273,9 @@ func (p *NotesPrinter) PrintFullNote(n *Note) {
     }
     fmt.Println("Created: " + n.Created.Format(p.TimeFormat))
     fmt.Println("Updated: " + n.Updated.Format(p.TimeFormat))
+    fmt.Println("Tags: " + strings.Join(n.Tags, ", "))
     fmt.Print("\n")
     fmt.Print(n.Content)
     fmt.Print("\n")
+    PrintVerticalLine()
 }
