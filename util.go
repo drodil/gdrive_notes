@@ -20,7 +20,7 @@ func CreateAppFolder() (string, error) {
         return "", err
     }
 
-    os.Mkdir(home + "/.gdrive_notes", 0600)
+    os.Mkdir(home + "/.gdrive_notes", 0770)
     return home + "/.gdrive_notes", nil
 }
 
