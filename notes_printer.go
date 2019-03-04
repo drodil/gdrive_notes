@@ -281,9 +281,18 @@ func (p *NotesPrinter) PrintFullNote(n *Note) {
     if p.ShowDue {
         fmt.Println("Due: " + n.Due.Format(p.TimeFormat))
     }
+
+    if len(n.Tags) > 0 {
+        fmt.Println("Tags: " + strings.Join(n.Tags, ", "))
+    }
+
+    noteUrls := len(n.GetUrls())
+    if noteUrls > 0 {
+        fmt.Println("URLs: " + strconv.Itoa(noteUrls))
+    }
+
     fmt.Println("Created: " + n.Created.Format(p.TimeFormat))
     fmt.Println("Updated: " + n.Updated.Format(p.TimeFormat))
-    fmt.Println("Tags: " + strings.Join(n.Tags, ", "))
     fmt.Print("\n")
     fmt.Print(n.Content)
     fmt.Print("\n")

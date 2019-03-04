@@ -510,6 +510,11 @@ func (n *NotesGui) updatePreviewView(g *gocui.Gui) error {
             fmt.Fprintln(pv, "Tags:     ", strings.Join(n.selectedNote.Tags, ", "))
         }
 
+        noteUrls := n.selectedNote.GetUrls()
+        if len(noteUrls) > 0 {
+            fmt.Fprintln(pv, "URLs:     ", len(noteUrls))
+        }
+
         fmt.Fprintln(pv, "Created:  ", n.selectedNote.Created.Format(n.Config.TimeFormat))
         fmt.Fprintln(pv, "Updated:  ", n.selectedNote.Updated.Format(n.Config.TimeFormat))
     } else if n.selectedNote != nil {

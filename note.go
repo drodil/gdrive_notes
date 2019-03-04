@@ -135,8 +135,12 @@ func (n *Note) MatchesSearch(str string) (bool) {
     return false
 }
 
+func (n *Note) GetUrls() ([]string) {
+    return xurls.Strict().FindAllString(n.Content, 1)
+}
+
 func (n *Note) OpenUrls() (int) {
-    urls := xurls.Strict().FindAllString(n.Content, 1)
+    urls := n.GetUrls()
     if len(urls) > 0 {
         browser.Stdout = ioutil.Discard
         for _, url := range urls {
