@@ -22,6 +22,7 @@ type NotesGui struct {
     Config *Configuration
     preview bool
     idx int
+    selectedNote *Note
     cmd string
     statusString string
     showNoteContent bool
@@ -203,8 +204,11 @@ func (n *NotesGui) gotoBottom(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) editNote(g *gocui.Gui, v *gocui.View) error {
-    selected := &n.Notes.Notes[n.idx]
-    modified, err := selected.EditInEditor()
+    if n.selectedNote == nil {
+        return nil
+    }
+
+    modified, err := n.selectedNote.EditInEditor()
     if err != nil {
         return err
     }
@@ -231,8 +235,10 @@ func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) deleteNote(g *gocui.Gui, v *gocui.View) error {
-    selected := &n.Notes.Notes[n.idx]
-    n.Notes.DeleteNote(selected.Id)
+    if n.selectedNote == nil {
+        return nil
+    }
+    n.Notes.DeleteNote(n.selectedNote.Id)
     n.decreaseIndex(g, v)
     n.unsavedModifications = true
     return n.update(g)
@@ -240,9 +246,11 @@ func (n *NotesGui) deleteNote(g *gocui.Gui, v *gocui.View) error {
 
 func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
     now := time.Now()
-    selected := &n.Notes.Notes[n.idx]
-    selected.Done = !selected.Done
-    selected.Updated = now
+    if n.selectedNote == nil {
+        return nil
+    }
+    n.selectedNote.Done = !n.selectedNote.Done
+    n.selectedNote.Updated = now
     n.unsavedModifications = true
     return n.update(g)
 }
@@ -357,26 +365,16 @@ func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
     return n.update(g)
 }
 
-func (n *NotesGui) update(g *gocui.Gui) error {
-    g.Cursor = false
-    if len(n.cmd) == 0 {
-        _, verr := g.SetCurrentView(LIST_VIEW)
-        if verr != nil {
-            return verr
-        }
-    }
-
+func (n *NotesGui) updateListView(g *gocui.Gui) error {
     v, err := g.View(LIST_VIEW)
     if err != nil {
         return err
     }
     v.Clear()
     v.Title = "Notes"
-    var selected *Note
     if len(n.Notes.Notes) > 0 {
-        selected = &n.Notes.Notes[n.idx]
-        for i, note := range n.Notes.Notes {
-            if i == n.idx {
+        for _, note := range n.Notes.Notes {
+            if n.selectedNote != nil && n.selectedNote.Id == note.Id {
                 c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
                 c.Fprintln(v, note.GetStatusAndTitle())
                 continue
@@ -387,38 +385,45 @@ func (n *NotesGui) update(g *gocui.Gui) error {
         fmt.Fprintln(v, "No notes")
     }
 
+    return nil
+}
+
+func (n *NotesGui) updatePreviewView(g *gocui.Gui) error {
     pv, err := g.View(PREVIEW_VIEW)
     if err != nil {
         return err
     }
 
-    // TODO: Separate updating different views in multiple functions
     // TODO: Add some color here
     pv.Clear()
-    if selected != nil && !n.showNoteContent {
+    if n.selectedNote != nil && !n.showNoteContent {
         pv.Title = "Details"
-        fmt.Fprintln(pv, "ID:       ", selected.Id)
+        fmt.Fprintln(pv, "ID:       ", n.selectedNote.Id)
         if n.Config.UsePriority {
-            fmt.Fprintln(pv, "Priority: ", selected.Priority)
+            fmt.Fprintln(pv, "Priority: ", n.selectedNote.Priority)
         }
 
         if n.Config.UseDue {
-            if !selected.Due.IsZero() {
-                fmt.Fprintln(pv, "Due:       ", selected.Due.Format(n.Config.TimeFormat))
+            if !n.selectedNote.Due.IsZero() {
+                fmt.Fprintln(pv, "Due:       ", n.selectedNote.Due.Format(n.Config.TimeFormat))
             }
         }
 
-        if len(selected.Tags) > 0 {
-            fmt.Fprintln(pv, "Tags:     ", strings.Join(selected.Tags, ", "))
+        if len(n.selectedNote.Tags) > 0 {
+            fmt.Fprintln(pv, "Tags:     ", strings.Join(n.selectedNote.Tags, ", "))
         }
 
-        fmt.Fprintln(pv, "Created:  ", selected.Created.Format(n.Config.TimeFormat))
-        fmt.Fprintln(pv, "Updated:  ", selected.Updated.Format(n.Config.TimeFormat))
-    } else if selected != nil {
+        fmt.Fprintln(pv, "Created:  ", n.selectedNote.Created.Format(n.Config.TimeFormat))
+        fmt.Fprintln(pv, "Updated:  ", n.selectedNote.Updated.Format(n.Config.TimeFormat))
+    } else if n.selectedNote != nil {
         pv.Title = "Content"
-        fmt.Fprint(pv, selected.Content)
+        fmt.Fprint(pv, n.selectedNote.Content)
     }
 
+    return nil
+}
+
+func (n *NotesGui) updateCommandView(g *gocui.Gui) error {
     cv, err := g.View(COMMAND_VIEW)
     if err != nil {
         return err
@@ -434,6 +439,38 @@ func (n *NotesGui) update(g *gocui.Gui) error {
         if err != nil {
             return err
         }
+    }
+    return nil
+}
+
+func (n *NotesGui) update(g *gocui.Gui) error {
+    g.Cursor = false
+    if len(n.cmd) == 0 {
+        _, verr := g.SetCurrentView(LIST_VIEW)
+        if verr != nil {
+            return verr
+        }
+    }
+
+    if len(n.Notes.Notes) > 0 {
+        n.selectedNote = &n.Notes.Notes[n.idx]
+    } else {
+        n.selectedNote = nil
+    }
+
+    err := n.updateListView(g)
+    if err != nil {
+        return err
+    }
+
+    err = n.updatePreviewView(g)
+    if err != nil {
+        return err
+    }
+
+    err = n.updateCommandView(g)
+    if err != nil {
+        return err
     }
 
     return nil
