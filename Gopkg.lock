@@ -66,12 +66,28 @@
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:0d72291ecb10a37e75f0484eb8e700b0cffbd2501f6e63b282028dcc7830d33c"
+  name = "github.com/mvdan/xurls"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e52e821cbfe8fe163ff6f8628ab5869b11fc05af"
+  version = "v2.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:9d34b3ceb9aee1fc032d808220c14bbf560cd53562c890f90b79ad8b903c8d09"
   name = "github.com/nsf/termbox-go"
   packages = ["."]
   pruneopts = "UT"
   revision = "02980233997d87bbda048393d47b4d453f7a398d"
+
+[[projects]]
+  branch = "master"
+  digest = "1:635ac9478e783f09b2945663e359ebf74bc225b37f9845795d1b247285b458a2"
+  name = "github.com/pkg/browser"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0a3d74bf9ce488f035cf5bc36f753a711bc74334"
 
 [[projects]]
   branch = "master"
@@ -156,6 +172,9 @@
     "github.com/fatih/color",
     "github.com/jroimartin/gocui",
     "github.com/mitchellh/go-homedir",
+    "github.com/mvdan/xurls",
+    "github.com/nsf/termbox-go",
+    "github.com/pkg/browser",
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/net/context",
     "golang.org/x/oauth2",

@@ -73,6 +73,11 @@ func (n *NotesGui) Start() (error) {
         return err
     }
 
+    err = g.SetKeybinding(LIST_VIEW, 'u', gocui.ModNone, n.openUrls)
+    if err != nil {
+        return err
+    }
+
     err = g.SetKeybinding(LIST_VIEW, gocui.KeySpace, gocui.ModNone, n.toggleDone)
     if err != nil {
         return err
@@ -201,6 +206,18 @@ func (n *NotesGui) gotoBottom(g *gocui.Gui, v *gocui.View) error {
        n.idx = len(n.Notes.Notes) - 1
     }
     return n.update(g)
+}
+
+func (n *NotesGui) openUrls(g *gocui.Gui, v *gocui.View) error {
+    if n.selectedNote == nil {
+        return nil
+    }
+    urls := n.selectedNote.OpenUrls()
+    if urls == 0 {
+        n.statusString = "Selected note did not contain any URLs"
+        return n.update(g)
+    }
+    return nil
 }
 
 func (n *NotesGui) editNote(g *gocui.Gui, v *gocui.View) error {
@@ -350,6 +367,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, "e - Edit selected note")
     fmt.Fprintln(v, "<enter> - Show note details / content")
     fmt.Fprintln(v, "G - Go to bottom of the list")
+    fmt.Fprintln(v, "u - Open URLs in note in browser")
     fmt.Fprintln(v, ":a <note> - Quick add note")
 
     g.SetCurrentView(HELP_VIEW)

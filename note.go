@@ -9,6 +9,9 @@ import (
     "strings"
     "crypto/md5"
     "encoding/hex"
+
+    "github.com/mvdan/xurls"
+    "github.com/pkg/browser"
 )
 
 // Single NOTE functionality
@@ -119,6 +122,17 @@ func (n *Note) EditInEditor() (bool, error) {
     }
 
     return updated, nil
+}
+
+func (n *Note) OpenUrls() (int) {
+    urls := xurls.Strict().FindAllString(n.Content, 1)
+    if len(urls) > 0 {
+        browser.Stdout = ioutil.Discard
+        for _, url := range urls {
+            browser.OpenURL(url)
+        }
+    }
+    return len(urls)
 }
 
 func (n *Note) getMD5() (string) {

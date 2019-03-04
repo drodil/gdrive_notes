@@ -132,6 +132,25 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             printer.Print(n)
             return false, nil
 
+        // Open urls in browser found in note
+        case "urls":
+            fallthrough
+        case "u":
+            if len(args) < 1 {
+                return false, errors.New("Give note id")
+            }
+
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+            urls_opened := note.OpenUrls()
+            if urls_opened == 0 {
+                fmt.Printf("Note %v did not contain any urls\n", note.Id)
+            }
+            return false, nil
+
         // Mark done by ID
         case "done":
             fallthrough
@@ -339,6 +358,7 @@ func printHelp(err error) {
     fmt.Println("td|todo\t\t\tList all not-done notes")
     fmt.Println("s|show <id>\t\tShow note contents with given id")
     fmt.Println("tags\t\t\tShow all tags assigned to notes")
+    fmt.Println("u|urls <id>\t\tOpen URLs in note in browser")
     fmt.Println("")
     fmt.Println("Additional parameters for listing:")
     fmt.Println("--order|-o <column>\tOrder by column. Has to be one of the following:")
