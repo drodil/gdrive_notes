@@ -26,6 +26,18 @@ Dependencies are handled with [golang/dep](https://github.com/golang/dep#install
 go get github.com/drodil/gdrive_notes
 ```
 
+## Configuration
+
+Configuration can be done with the following command
+
+```bash
+gdrive_notes config
+```
+
+Configuration is machine specific so if you for example use notes in home/work you can set default tags to identify
+notes done in different locations. Also you might want to have due date and/or priority for some of the notes but not
+necessarily want to see them in another.
+
 ## Dependencies
 
 * [golang/dep](https://github.com/golang/dep)
@@ -33,11 +45,11 @@ go get github.com/drodil/gdrive_notes
 * [googleapis/google-api-go-client](https://github.com/googleapis/google-api-go-client)
 * [fatih/color](https://github.com/fatih/color)
 * [jroimartin/gocui](https://github.com/jroimartin/gocui)
+* [mvdan/xurls](https://github.com/mvdan/xurls)
 
 ## TODO/Future ideas
 
 * Setting due date for notes
-* Backup configuration to gdrive also
 * Start working on note and track time to complete it
     * Should be able to stop work and track work time multiple times per note
     * Should be configurable to be used

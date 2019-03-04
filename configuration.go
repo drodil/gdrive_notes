@@ -3,6 +3,7 @@ package main
 import(
     "os"
     "io/ioutil"
+    "strings"
     "encoding/json"
 )
 
@@ -12,6 +13,7 @@ type Configuration struct {
     Color bool `json:"color"`
     UsePriority bool `json:"use_priority"`
     UseDue bool `json:"use_due"`
+    DefaultTags []string `json:"default_tags"`
     config_file string
 }
 
@@ -79,6 +81,16 @@ func (c *Configuration) Configure() {
             break
         }
     }
+
+    tagsStr, err := Question("Default tags (comma separated): ")
+    if err == nil {
+        tags := strings.Split(tagsStr, ",")
+        c.DefaultTags = c.DefaultTags[:0]
+        for _, tag := range tags {
+            c.DefaultTags = append(c.DefaultTags, strings.Trim(tag, " "))
+        }
+    }
+
     c.Save()
 }
 

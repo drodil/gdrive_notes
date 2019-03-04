@@ -41,7 +41,7 @@ func Question(question string) (string, error) {
     if err != nil {
         return "", err
     }
-    return text[:1], nil
+    return strings.TrimSuffix(text, "\n"), nil
 }
 
 func YesNoQuestion(question string) (bool, error) {
