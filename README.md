@@ -13,6 +13,7 @@ Features:
 * Search from note content
 * Search from note tags
 * Ordering of notes
+* Opening URLs in browser mentioned in the note
 * Configuration of the tool
 * Backup/reload notes to and from Google Drive
 * CLI GUI
@@ -64,6 +65,8 @@ necessarily want to see them in another.
 * REST server for notes
 * Background service for notifications
     * https://github.com/martinlindhe/notify
+* Use goroutines for loading/saving notes
+    * To make the UI more responsive
 
 Additional apps using the same notes database:
 

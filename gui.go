@@ -316,6 +316,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
                     return err
                 }
                 n.statusString = "Notes saved"
+                n.unsavedModifications = false
             }
             break
         case "h":
