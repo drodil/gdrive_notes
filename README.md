@@ -67,6 +67,7 @@ necessarily want to see them in another.
     * https://github.com/martinlindhe/notify
 * Use goroutines for loading/saving notes
     * To make the UI more responsive
+* Watch GDrive file for modifications from other apps/clients
 
 Additional apps using the same notes database:
 
