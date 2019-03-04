@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "strings"
+    "time"
 
     "github.com/jroimartin/gocui"
     "github.com/fatih/color"
@@ -21,7 +22,7 @@ type NotesGui struct {
     preview bool
     idx int
     cmd string
-    errString string
+    statusString string
     showNoteContent bool
     SaveModifications bool
     unsavedModifications bool
@@ -50,6 +51,31 @@ func (n *NotesGui) Start() (error) {
         return err
     }
 
+    err = g.SetKeybinding(LIST_VIEW, 'G', gocui.ModNone, n.gotoBottom)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding(LIST_VIEW, 'e', gocui.ModNone, n.editNote)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding(LIST_VIEW, 'D', gocui.ModNone, n.deleteNote)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding(LIST_VIEW, 'a', gocui.ModNone, n.addNote)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding(LIST_VIEW, gocui.KeySpace, gocui.ModNone, n.toggleDone)
+    if err != nil {
+        return err
+    }
+
     err = g.SetKeybinding(LIST_VIEW, gocui.KeyEnter, gocui.ModNone, n.toggleContent)
     if err != nil {
         return err
@@ -72,7 +98,7 @@ func (n *NotesGui) Start() (error) {
     }
 
     // Handles vim like command arguments for example ':q'
-    for _, char := range "qwertyuiopasdfghjklzxcvbnm" {
+    for _, char := range "qwertyuiopasdfghjklzxcvbnm!" {
         f := func(char rune) func(*gocui.Gui, *gocui.View) error {
             return func(g *gocui.Gui, v *gocui.View) error {
                 n.cmd += string(char)
@@ -168,6 +194,59 @@ func (n *NotesGui) decreaseIndex(g *gocui.Gui, v *gocui.View) error {
     return n.update(g)
 }
 
+func (n *NotesGui) gotoBottom(g *gocui.Gui, v *gocui.View) error {
+    if len(n.Notes.Notes) > 0 {
+       n.idx = len(n.Notes.Notes) - 1
+    }
+    return n.update(g)
+}
+
+func (n *NotesGui) editNote(g *gocui.Gui, v *gocui.View) error {
+    selected := &n.Notes.Notes[n.idx]
+    modified, err := selected.EditInEditor()
+    if err != nil {
+        return err
+    }
+    termbox.Sync()
+    if modified {
+        n.unsavedModifications = true
+    }
+    return n.update(g)
+}
+
+func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
+    now := time.Now()
+    note := Note{Created: now, Updated: now, Priority: 0}
+    modified, err := note.EditInEditor()
+    if err != nil {
+        return err
+    }
+    termbox.Sync()
+    if modified {
+        n.Notes.AddNote(note)
+        n.unsavedModifications = true
+    }
+    return n.update(g)
+}
+
+func (n *NotesGui) deleteNote(g *gocui.Gui, v *gocui.View) error {
+    selected := &n.Notes.Notes[n.idx]
+    n.Notes.DeleteNote(selected.Id)
+    n.decreaseIndex(g, v)
+    n.unsavedModifications = true
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
+    now := time.Now()
+    selected := &n.Notes.Notes[n.idx]
+    selected.Done = !selected.Done
+    selected.Updated = now
+    n.unsavedModifications = true
+    return n.update(g)
+}
+
+
 func (n *NotesGui) startCommand(g *gocui.Gui, v *gocui.View) error {
     n.cmd = ":"
     _, err := g.SetCurrentView(COMMAND_VIEW)
@@ -186,7 +265,6 @@ func (n *NotesGui) backspaceCommand(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
-    selected := &n.Notes.Notes[n.idx]
     command := n.cmd[1:]
     n.cmd = ""
     switch(command) {
@@ -194,31 +272,31 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             return gocui.ErrQuit
         case "q":
             if n.unsavedModifications {
-                n.errString = "You have unsaved modifications. To discard them use :q!"
+                n.statusString = "You have unsaved modifications. To discard them use :q!"
                 break
             }
             fallthrough
         case "wq":
             if n.unsavedModifications {
-               fmt.Println("Saving modifications")
+                err := n.Notes.SaveNotes()
+                if err != nil {
+                    return err
+                }
             }
             return gocui.ErrQuit
-        case "e":
-            modified, err := selected.EditInEditor()
-            if err != nil {
-                return err
+        case "w":
+            if n.unsavedModifications {
+                err := n.Notes.SaveNotes()
+                if err != nil {
+                    return err
+                }
+                n.statusString = "Notes saved"
             }
-            termbox.Sync()
-            if modified {
-                n.unsavedModifications = true
-            }
-
+            break
         // TODO: Handle help
-        // TODO: Handle adding
-        // TODO: Handle deleting
         default:
             if len(command) > 0 {
-                n.errString = "Invalid command. Use :h to show help"
+                n.statusString = "Invalid command. Use :h to show help"
             }
     }
 
@@ -253,14 +331,19 @@ func (n *NotesGui) update(g *gocui.Gui) error {
     }
     v.Clear()
     v.Title = "Notes"
-    selected := n.Notes.Notes[n.idx]
-    for i, note := range n.Notes.Notes {
-        if i == n.idx {
-            c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
-            c.Fprintln(v, note.GetTitle())
-            continue
+    var selected *Note
+    if len(n.Notes.Notes) > 0 {
+        selected = &n.Notes.Notes[n.idx]
+        for i, note := range n.Notes.Notes {
+            if i == n.idx {
+                c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
+                c.Fprintln(v, note.GetStatusAndTitle())
+                continue
+            }
+            fmt.Fprintln(v, note.GetStatusAndTitle())
         }
-        fmt.Fprintln(v, note.GetTitle())
+    } else {
+        fmt.Fprintln(v, "No notes")
     }
 
     pv, err := g.View(PREVIEW_VIEW)
@@ -271,7 +354,7 @@ func (n *NotesGui) update(g *gocui.Gui) error {
     // TODO: Separate updating different views in multiple functions
     // TODO: Add some color here
     pv.Clear()
-    if !n.showNoteContent {
+    if selected != nil && !n.showNoteContent {
         pv.Title = "Details"
         fmt.Fprintln(pv, "ID:       ", selected.Id)
         if n.Config.UsePriority {
@@ -290,7 +373,7 @@ func (n *NotesGui) update(g *gocui.Gui) error {
 
         fmt.Fprintln(pv, "Created:  ", selected.Created.Format(n.Config.TimeFormat))
         fmt.Fprintln(pv, "Updated:  ", selected.Updated.Format(n.Config.TimeFormat))
-    } else {
+    } else if selected != nil {
         pv.Title = "Content"
         fmt.Fprint(pv, selected.Content)
     }
@@ -302,13 +385,13 @@ func (n *NotesGui) update(g *gocui.Gui) error {
     cv.Clear()
     if len(n.cmd) > 0 {
         fmt.Fprintln(cv, n.cmd)
-    } else if len(n.errString) > 0 {
+    } else if len(n.statusString) > 0 {
         _, err := g.SetCurrentView(LIST_VIEW)
         if err != nil {
             return err
         }
-        fmt.Fprintln(cv, n.errString)
-        n.errString = ""
+        fmt.Fprintln(cv, n.statusString)
+        n.statusString = ""
     } else {
         _, err := g.SetCurrentView(LIST_VIEW)
         if err != nil {

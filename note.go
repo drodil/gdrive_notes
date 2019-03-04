@@ -29,6 +29,17 @@ func (n *Note) GetTitle() (string) {
     return parts[0]
 }
 
+func (n *Note) GetStatusAndTitle() (string) {
+    ret := "["
+    if n.Done {
+        ret += "x]"
+    } else {
+        ret += " ]"
+    }
+    ret += " " + n.GetTitle()
+    return ret
+}
+
 func (n *Note) HasTag(tag string) (bool) {
     for _, t := range n.Tags {
         if t == tag {

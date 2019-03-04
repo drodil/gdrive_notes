@@ -15,6 +15,8 @@ Features:
 * Ordering of notes
 * Configuration of the tool
 * Backup/reload notes to and from Google Drive
+* CLI GUI
+    * See [available commands](COMMANDS.md)
 
 ## Installation
 
@@ -40,11 +42,8 @@ go get github.com/drodil/gdrive_notes
     * Should be able to stop work and track work time multiple times per note
     * Should be configurable to be used
 * CLI GUI for handling notes
-    * vim keymappings to navigate
     * Ordering of the notes
     * Finding notes
-    * Marking notes done
-    * Check https://github.com/nsf/termbox-go
 * Add tests
 * Support for "due today" or "due tomorrow" etc.
 * More filters
