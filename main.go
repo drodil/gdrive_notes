@@ -61,7 +61,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         if err != nil {
             return false, err
         }
-        return false, nil
+        return gui.SaveModifications, nil
     }
 
     command := args[0]

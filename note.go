@@ -80,7 +80,7 @@ func (n *Note) EditInEditor() (bool, error) {
         return false, err
     }
 
-    f.Close()
+    defer f.Close()
     cmd := exec.Command(editor, fpath)
     cmd.Stdin = os.Stdin
     cmd.Stdout = os.Stdout

@@ -22,9 +22,6 @@ Dependencies are handled with [golang/dep](https://github.com/golang/dep#install
 
 ```bash
 go get github.com/drodil/gdrive_notes
-cd ~/go/src/github.com/drodil/gdrive_notes
-dep ensure
-go build
 ```
 
 ## Dependencies
@@ -33,6 +30,7 @@ go build
 * [mitchellh/go-homedir](https://github.com/mitchellh/go-homedir)
 * [googleapis/google-api-go-client](https://github.com/googleapis/google-api-go-client)
 * [fatih/color](https://github.com/fatih/color)
+* [jroimartin/gocui](https://github.com/jroimartin/gocui)
 
 ## TODO/Future ideas
 
