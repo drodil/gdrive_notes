@@ -38,6 +38,9 @@ go build
 
 * Setting due date for notes
 * Backup configuration to gdrive also
+* Start working on note and track time to complete it
+    * Should be able to stop work and track work time multiple times per note
+    * Should be configurable to be used
 * CLI GUI for handling notes
     * vim keymappings to navigate
     * Ordering of the notes
@@ -48,6 +51,7 @@ go build
 * Support for "due today" or "due tomorrow" etc.
 * More filters
     * ID range
+    * Wildcard/regex searches for tags and content
 * REST server for notes
 * Background service for notifications
     * https://github.com/martinlindhe/notify

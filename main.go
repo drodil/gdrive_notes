@@ -53,9 +53,15 @@ func handleListArgs(args []string, printer *NotesPrinter) {
 }
 
 func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
-    // TODO: Return nil instead error when GUI is available and start that
     if len(args) == 0 {
-        return false, errors.New("Insufficient parameters")
+        gui := NotesGui{}
+        gui.Notes = n
+        gui.Config = c
+        err := gui.Start()
+        if err != nil {
+            return false, err
+        }
+        return false, nil
     }
 
     command := args[0]
