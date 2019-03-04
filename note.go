@@ -124,6 +124,17 @@ func (n *Note) EditInEditor() (bool, error) {
     return updated, nil
 }
 
+func (n *Note) MatchesSearch(str string) (bool) {
+    if strings.Contains(n.Content, str) {
+        return true
+    }
+    tagsStr := strings.Join(n.Tags, " ")
+    if strings.Contains(tagsStr, str) {
+        return true
+    }
+    return false
+}
+
 func (n *Note) OpenUrls() (int) {
     urls := xurls.Strict().FindAllString(n.Content, 1)
     if len(urls) > 0 {

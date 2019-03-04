@@ -134,7 +134,7 @@ func (p *NotesPrinter) Print(n *Notes) {
         if p.SkipDone && note.Done {
             continue
         }
-        if len(p.SearchStr) > 0 && !strings.Contains(note.Content, p.SearchStr) {
+        if len(p.SearchStr) > 0 && !note.MatchesSearch(p.SearchStr) {
             continue
         }
         if p.ShowPriority && note.Priority < p.PrioFilter {

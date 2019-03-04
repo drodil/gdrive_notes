@@ -11,10 +11,10 @@
 * `G`: Go to bottom of the list
 * `:h`: Print help
 * `:a <note>`: Quick add note
+* `/<search>`: Search for notes. Press `<enter>` to finish searching, `<esc>` to cancel
 
 ## TODO:
 
-* Searching
 * Sorting
 * Tags
 * Undo

@@ -28,6 +28,7 @@ type NotesGui struct {
     showNoteContent bool
     SaveModifications bool
     unsavedModifications bool
+    searchStr string
 }
 
 func (n *NotesGui) Start() (error) {
@@ -88,6 +89,12 @@ func (n *NotesGui) Start() (error) {
         return err
     }
 
+    // Starts search command
+    err = g.SetKeybinding(LIST_VIEW, '/', gocui.ModNone, n.startSearch)
+    if err != nil {
+        return err
+    }
+
     // Starts vim like command
     err = g.SetKeybinding(LIST_VIEW, ':', gocui.ModNone, n.startCommand)
     if err != nil {
@@ -135,7 +142,7 @@ func (n *NotesGui) Start() (error) {
     }
 
     // Exits command mode
-    err = g.SetKeybinding(COMMAND_VIEW, gocui.KeyEsc, gocui.ModNone, n.cancelCommand)
+    err = g.SetKeybinding("", gocui.KeyEsc, gocui.ModNone, n.cancelCommand)
     if err != nil {
         return err
     }
@@ -281,6 +288,16 @@ func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
     return n.update(g)
 }
 
+func (n *NotesGui) startSearch(g *gocui.Gui, v *gocui.View) error {
+    n.cmd = "/"
+    _, err := g.SetCurrentView(COMMAND_VIEW)
+    if err != nil {
+        return err
+    }
+    return n.update(g)
+}
+
+
 func (n *NotesGui) startCommand(g *gocui.Gui, v *gocui.View) error {
     n.cmd = ":"
     _, err := g.SetCurrentView(COMMAND_VIEW)
@@ -299,6 +316,14 @@ func (n *NotesGui) backspaceCommand(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
+    if strings.HasPrefix(n.cmd, "/") {
+        _, err := g.SetCurrentView(LIST_VIEW)
+        if err != nil {
+            return err
+        }
+        return n.update(g)
+    }
+
     parts := strings.Split(n.cmd[1:], " ")
     command := ""
     if len(parts) > 0 {
@@ -391,6 +416,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, "G - Go to bottom of the list")
     fmt.Fprintln(v, "u - Open URLs in note in browser")
     fmt.Fprintln(v, ":a <note> - Quick add note")
+    fmt.Fprintln(v, "/<search> - Search for notes. Press <enter> to finish, <esc> to exit")
 
     g.SetCurrentView(HELP_VIEW)
     return nil
@@ -398,6 +424,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
 
 func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
     n.cmd = ""
+    n.searchStr = ""
     _, err := g.SetCurrentView(LIST_VIEW)
     if err != nil {
         return err
@@ -410,18 +437,48 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
     if err != nil {
         return err
     }
+
+    if len(n.Notes.Notes) > 0 {
+        n.selectedNote = &n.Notes.Notes[n.idx]
+    } else {
+        n.selectedNote = nil
+    }
+
+    if strings.HasPrefix(n.cmd, "/") {
+        n.searchStr = n.cmd[1:]
+        if len(n.searchStr) > 0 {
+            haveMatches := false
+            for _, note := range n.Notes.Notes {
+                if note.MatchesSearch(n.searchStr) {
+                    haveMatches = true
+                    break
+                }
+            }
+            if haveMatches && n.selectedNote != nil && !n.selectedNote.MatchesSearch(n.searchStr) {
+                return n.increaseIndex(g, v)
+            }
+        }
+    }
+
     v.Clear()
     v.Title = "Notes"
-    if len(n.Notes.Notes) > 0 {
-        for _, note := range n.Notes.Notes {
-            if n.selectedNote != nil && n.selectedNote.Id == note.Id {
-                c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
-                c.Fprintln(v, note.GetStatusAndTitle())
-                continue
-            }
-            fmt.Fprintln(v, note.GetStatusAndTitle())
+    notesRendered := false
+    for _, note := range n.Notes.Notes {
+        if len(n.searchStr) > 0 && !note.MatchesSearch(n.searchStr) {
+            continue
         }
-    } else {
+
+        notesRendered = true
+        if n.selectedNote != nil && n.selectedNote.Id == note.Id {
+            c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
+            c.Fprintln(v, note.GetStatusAndTitle())
+            continue
+        }
+        fmt.Fprintln(v, note.GetStatusAndTitle())
+    }
+
+    if !notesRendered {
+        n.selectedNote = nil
         fmt.Fprintln(v, "No notes")
     }
 
@@ -490,12 +547,6 @@ func (n *NotesGui) update(g *gocui.Gui) error {
         if verr != nil {
             return verr
         }
-    }
-
-    if len(n.Notes.Notes) > 0 {
-        n.selectedNote = &n.Notes.Notes[n.idx]
-    } else {
-        n.selectedNote = nil
     }
 
     err := n.updateListView(g)
