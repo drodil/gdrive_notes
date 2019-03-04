@@ -105,7 +105,7 @@ func (n *NotesGui) Start() (error) {
     }
 
     // Handles vim like command arguments for example ':q'
-    for _, char := range "qwertyuiopasdfghjklzxcvbnm!" {
+    for _, char := range "QWERTYUIOPASDFGHJKLZXCVBNM,.-|_^1234567890qwertyuiopasdfghjklzxcvbnm! " {
         f := func(char rune) func(*gocui.Gui, *gocui.View) error {
             return func(g *gocui.Gui, v *gocui.View) error {
                 n.cmd += string(char)
@@ -117,6 +117,15 @@ func (n *NotesGui) Start() (error) {
         if err != nil {
             return err
         }
+    }
+
+    err = g.SetKeybinding(COMMAND_VIEW, gocui.KeySpace, gocui.ModNone, func(*gocui.Gui, *gocui.View) error {
+        n.cmd += " "
+        return n.update(g)
+    })
+
+    if err != nil {
+        return err
     }
 
     // Handles enter on commands
@@ -290,7 +299,11 @@ func (n *NotesGui) backspaceCommand(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
-    command := n.cmd[1:]
+    parts := strings.Split(n.cmd[1:], " ")
+    command := ""
+    if len(parts) > 0 {
+        command = parts[0]
+    }
     n.cmd = ""
     switch(command) {
         case "q!":
@@ -322,6 +335,14 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
         case "h":
             n.cmd = ""
             return n.showHelp(g)
+
+        case "a":
+            now := time.Now()
+            note := Note{Created: now, Updated: now, Priority: 0}
+            note.Content = strings.Join(parts[1:], " ")
+            n.Notes.AddNote(note)
+            n.unsavedModifications = true
+            break
 
         default:
             if len(command) > 0 {
