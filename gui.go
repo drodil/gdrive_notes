@@ -14,6 +14,7 @@ const (
     LIST_VIEW = "list"
     PREVIEW_VIEW = "preview"
     COMMAND_VIEW = "cmd"
+    HELP_VIEW = "help"
 )
 
 type NotesGui struct {
@@ -246,7 +247,6 @@ func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
     return n.update(g)
 }
 
-
 func (n *NotesGui) startCommand(g *gocui.Gui, v *gocui.View) error {
     n.cmd = ":"
     _, err := g.SetCurrentView(COMMAND_VIEW)
@@ -293,7 +293,10 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
                 n.statusString = "Notes saved"
             }
             break
-        // TODO: Handle help
+        case "h":
+            n.cmd = ""
+            return n.showHelp(g)
+
         default:
             if len(command) > 0 {
                 n.statusString = "Invalid command. Use :h to show help"
@@ -305,6 +308,44 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
         return err
     }
     return n.update(g)
+}
+
+func (n *NotesGui) showHelp(g *gocui.Gui) error {
+    maxX, maxY := g.Size()
+    v, err := g.SetView(HELP_VIEW, 0, 0, maxX-1, maxY-1)
+    if err != nil && err != gocui.ErrUnknownView {
+        return err
+    }
+    g.SetViewOnTop(HELP_VIEW)
+
+    err = g.SetKeybinding(HELP_VIEW, gocui.KeyEsc, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+        g.DeleteView(HELP_VIEW)
+        g.SetCurrentView(LIST_VIEW)
+        n.update(g)
+        return nil
+    })
+
+    if err != nil {
+        return err
+    }
+
+    v.Clear()
+    v.Title = "Google Drive notes help"
+    fmt.Fprintln(v, ":h - Show this help")
+    fmt.Fprintln(v, "<esc> - Quit this help")
+    fmt.Fprintln(v, ":q - Quit")
+    fmt.Fprintln(v, ":q! - Quit without saving")
+    fmt.Fprintln(v, ":wq - Save and quit")
+    fmt.Fprintln(v, "<j> / <k> - Move up and down")
+    fmt.Fprintln(v, "a - Add new note")
+    fmt.Fprintln(v, "D - Delete selected note")
+    fmt.Fprintln(v, "e - Edit selected note")
+    fmt.Fprintln(v, "<enter> - Show note details / content")
+    fmt.Fprintln(v, "G - Go to bottom of the list")
+    fmt.Fprintln(v, ":a <note> - Quick add note")
+
+    g.SetCurrentView(HELP_VIEW)
+    return nil
 }
 
 func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
@@ -386,10 +427,6 @@ func (n *NotesGui) update(g *gocui.Gui) error {
     if len(n.cmd) > 0 {
         fmt.Fprintln(cv, n.cmd)
     } else if len(n.statusString) > 0 {
-        _, err := g.SetCurrentView(LIST_VIEW)
-        if err != nil {
-            return err
-        }
         fmt.Fprintln(cv, n.statusString)
         n.statusString = ""
     } else {
