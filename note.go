@@ -53,17 +53,20 @@ func (n *Note) HasTag(tag string) (bool) {
 }
 
 func (n *Note) AddTag(tag string) (bool) {
-    if !n.HasTag(tag) {
-        n.Tags = append(n.Tags, tag)
+    tagStr := strings.Trim(tag, " ")
+
+    if !n.HasTag(tagStr) {
+        n.Tags = append(n.Tags, tagStr)
         return true
     }
     return false
 }
 
 func (n *Note) RemoveTag(tag string) (bool) {
+    tagStr := strings.Trim(tag, " ")
     for i := 0; i < len(n.Tags); i++ {
         t := n.Tags[i]
-        if t == tag {
+        if t == tagStr {
             n.Tags = append(n.Tags[:i], n.Tags[i+1:]...)
             return true
         }
@@ -72,8 +75,12 @@ func (n *Note) RemoveTag(tag string) (bool) {
     return false
 }
 
-func (n *Note) ClearTags() {
+func (n *Note) ClearTags() bool {
+    if len(n.Tags) == 0 {
+        return false
+    }
     n.Tags = n.Tags[:0]
+    return true
 }
 
 func (n *Note) EditInEditor() (bool, error) {

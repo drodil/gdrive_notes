@@ -10,6 +10,7 @@ import (
     "errors"
     "sort"
     "strings"
+    "time"
 
     "golang.org/x/net/context"
     "golang.org/x/oauth2"
@@ -54,7 +55,6 @@ func (n *Notes) Init(config *Configuration) (error) {
 
     n.file = notes_file
 
-    // TODO: Only reload if it has changed from last load
     err = n.reloadFromDrive()
     if err != nil {
         return err
@@ -64,6 +64,10 @@ func (n *Notes) Init(config *Configuration) (error) {
 }
 
 func (n *Notes) SaveNotes() (error) {
+    now := time.Now()
+    for _, note := range n.notes {
+        note.Updated = now
+    }
     return n.syncNotesFile()
 }
 
@@ -139,6 +143,9 @@ func (n *Notes) GetTagKeys() ([]string) {
     for k := range tags {
         keys = append(keys, k)
     }
+    sort.Slice(keys, func(i, j int) bool {
+        return keys[i] > keys[j]
+    })
     return keys
 }
 

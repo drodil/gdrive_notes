@@ -331,7 +331,10 @@ func (n *NotesGui) decreaseTagIndex(g *gocui.Gui, v *gocui.View) error {
         n.tagFilter = tags[n.tagIdx]
     } else if n.tagIdx == -1 {
         n.tagFilter = ""
+    } else if len(tags) > 0 {
+        n.tagFilter = tags[n.tagIdx]
     }
+
     n.updateShownNotes()
     return n.update(g)
 }
@@ -375,7 +378,7 @@ func (n *NotesGui) editNote(g *gocui.Gui, v *gocui.View) error {
 
 func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
     now := time.Now()
-    note := Note{Created: now, Updated: now, Priority: 0}
+    note := Note{Created: now, Priority: 0}
     modified, err := note.EditInEditor()
     if err != nil {
         return err
@@ -399,12 +402,10 @@ func (n *NotesGui) deleteNote(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
-    now := time.Now()
     if n.selectedNote == nil {
         return nil
     }
     n.selectedNote.Done = !n.selectedNote.Done
-    n.selectedNote.Updated = now
     n.unsavedModifications = true
     n.updateShownNotes()
     return n.update(g)
@@ -487,11 +488,49 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
 
         case "a":
             now := time.Now()
-            note := Note{Created: now, Updated: now, Priority: 0}
+            note := Note{Created: now, Priority: 0}
             note.Content = strings.Join(parts[1:], " ")
             n.Notes.AddNote(note)
             n.unsavedModifications = true
             n.updateShownNotes()
+            break
+
+        case "at":
+            if n.selectedNote == nil {
+                n.statusString = "Could not find note"
+                break
+            }
+            tagStr := strings.Join(parts[1:], " ")
+            tags := strings.Split(tagStr, ",")
+            for _, tag := range tags {
+                if n.selectedNote.AddTag(tag) {
+                    n.unsavedModifications = true
+                    n.statusString = "Tags added"
+                }
+            }
+            break
+
+        case "rt":
+            if n.selectedNote == nil {
+                n.statusString = "Could not find note"
+                break
+            }
+            tagStr := strings.Join(parts[1:], " ")
+            tags := strings.Split(tagStr, ",")
+            for _, tag := range tags {
+                if n.selectedNote.RemoveTag(tag) {
+                    n.unsavedModifications = true
+                    n.statusString = "Tags removed"
+                }
+            }
+            break
+
+        case "ct":
+            if n.selectedNote == nil {
+                n.statusString = "Could not find note"
+                break
+            }
+            n.unsavedModifications = n.selectedNote.ClearTags()
             break
 
         default:
@@ -542,6 +581,9 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, "G - Go to bottom of the list")
     fmt.Fprintln(v, "u - Open URLs in note in browser")
     fmt.Fprintln(v, ":a <note> - Quick add note")
+    fmt.Fprintln(v, ":at <tag1>,<tag2> - Add tags to selected note")
+    fmt.Fprintln(v, ":rt <tag1>,<tag2> - Remove tags from selected note")
+    fmt.Fprintln(v, ":ct - Clear tags from selected note")
     fmt.Fprintln(v, "/<search> - Search for notes. Press <enter> to finish, <esc> to exit")
     fmt.Fprintln(v, "<F2> - Show also done notes")
     fmt.Fprintln(v, "<F3> - Order notes by priority")

@@ -72,7 +72,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
 
             content := strings.Join(args, " ")
-            note := Note{Content: content, Priority: 0, Done: false, Created: now, Updated: now}
+            note := Note{Content: content, Priority: 0, Done: false, Created: now}
             id := n.AddNote(note)
             fmt.Printf("Added new note \"%v\" with id %v\n", note.GetTitle(), id)
             return true, nil
@@ -80,7 +80,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "a":
             fallthrough
         case "add":
-            note := Note{Created: now, Updated: now, Priority: 0}
+            note := Note{Created: now, Priority: 0}
             updated, err := note.EditInEditor()
             if err != nil {
                 return false, err
@@ -161,7 +161,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
 
             note.Done = true
-            note.Updated = now
             fmt.Printf("Note \"%v\" with id %v is now done\n", note.GetTitle(), note.Id)
             return true, nil
 
