@@ -33,6 +33,7 @@ type NotesGui struct {
     SaveModifications bool
     unsavedModifications bool
     searchStr string
+    sortColumns []string
 }
 
 func (n *NotesGui) Start() (error) {
@@ -70,7 +71,6 @@ func (n *NotesGui) Start() (error) {
     if err != nil {
         return err
     }
-
 
     err = g.SetKeybinding(LIST_VIEW, 'G', gocui.ModNone, n.gotoBottom)
     if err != nil {
@@ -171,7 +171,36 @@ func (n *NotesGui) Start() (error) {
     if err != nil {
         return err
     }
-    // TODO: Ordering
+
+    err = g.SetKeybinding("", gocui.KeyF3, gocui.ModNone, n.togglePrioOrder)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding("", gocui.KeyF4, gocui.ModNone, n.toggleTitleOrder)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding("", gocui.KeyF5, gocui.ModNone, n.toggleDueOrder)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding("", gocui.KeyF6, gocui.ModNone, n.toggleIdOrder)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding("", gocui.KeyF7, gocui.ModNone, n.toggleCreatedOrder)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding("", gocui.KeyF8, gocui.ModNone, n.toggleUpdatedOrder)
+    if err != nil {
+        return err
+    }
 
     g.Update(n.update)
     err = g.MainLoop()
@@ -220,6 +249,8 @@ func (n *NotesGui) updateShownNotes() {
     originalLen := len(n.shownNotes)
 
     n.shownNotes = n.Notes.GetNotes()
+    n.Notes.OrderNotes(n.sortColumns, n.shownNotes)
+
     if strings.HasPrefix(n.cmd, "/") {
         n.searchStr = n.cmd[1:]
         if len(n.searchStr) > 0 {
@@ -513,6 +544,12 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, ":a <note> - Quick add note")
     fmt.Fprintln(v, "/<search> - Search for notes. Press <enter> to finish, <esc> to exit")
     fmt.Fprintln(v, "<F2> - Show also done notes")
+    fmt.Fprintln(v, "<F3> - Order notes by priority")
+    fmt.Fprintln(v, "<F4> - Order notes by title")
+    fmt.Fprintln(v, "<F5> - Order notes by due")
+    fmt.Fprintln(v, "<F6> - Order notes by id")
+    fmt.Fprintln(v, "<F7> - Order notes by created")
+    fmt.Fprintln(v, "<F8> - Order notes by updated")
 
     g.SetCurrentView(HELP_VIEW)
     return nil
@@ -531,6 +568,79 @@ func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
 
 func (n *NotesGui) toggleShowDone(g *gocui.Gui, v *gocui.View) error {
     n.showDone = !n.showDone
+    n.updateShownNotes()
+    return n.update(g)
+}
+
+func (n *NotesGui) hasOrderColumn(col string) bool {
+    for _, c := range n.sortColumns {
+        if c == col {
+            return true
+        }
+    }
+    return false
+}
+
+func (n* NotesGui) replaceOrderColumn(old string, col string) {
+    for i, c := range n.sortColumns {
+        if c == old {
+            n.sortColumns[i] = col
+        }
+    }
+}
+
+func (n *NotesGui) removeOrderColumn(col string) {
+    for i, c := range n.sortColumns {
+        if c == col {
+            n.sortColumns = append(n.sortColumns[:i], n.sortColumns[i+1:]...)
+            i--
+            break
+        }
+    }
+}
+
+func (n *NotesGui) toggleOrderColumn(col string) {
+    if n.hasOrderColumn(col) {
+        n.replaceOrderColumn(col, "-" + col)
+    } else if n.hasOrderColumn("-" + col) {
+        n.removeOrderColumn("-" + col)
+    } else {
+        n.sortColumns = append(n.sortColumns, col)
+    }
+}
+
+func (n *NotesGui) togglePrioOrder(g *gocui.Gui, v *gocui.View) error {
+    n.toggleOrderColumn("prio")
+    n.updateShownNotes()
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleTitleOrder(g *gocui.Gui, v *gocui.View) error {
+    n.toggleOrderColumn("title")
+    n.updateShownNotes()
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleIdOrder(g *gocui.Gui, v *gocui.View) error {
+    n.toggleOrderColumn("id")
+    n.updateShownNotes()
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleDueOrder(g *gocui.Gui, v *gocui.View) error {
+    n.toggleOrderColumn("due")
+    n.updateShownNotes()
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleCreatedOrder(g *gocui.Gui, v *gocui.View) error {
+    n.toggleOrderColumn("created")
+    n.updateShownNotes()
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleUpdatedOrder(g *gocui.Gui, v *gocui.View) error {
+    n.toggleOrderColumn("updated")
     n.updateShownNotes()
     return n.update(g)
 }
@@ -613,17 +723,24 @@ func (n *NotesGui) updateCommandView(g *gocui.Gui) error {
         return err
     }
     cv.Clear()
+
+    line := ""
+
     if len(n.cmd) > 0 {
-        fmt.Fprintln(cv, n.cmd)
+        line += n.cmd
     } else if len(n.statusString) > 0 {
-        fmt.Fprintln(cv, n.statusString)
+        line += n.statusString
         n.statusString = ""
-    } else {
-        _, err := g.SetCurrentView(LIST_VIEW)
-        if err != nil {
-            return err
-        }
     }
+
+    if len(n.sortColumns) > 0 {
+        maxX, _ := g.Size()
+        sortStr := "O:" + strings.Join(n.sortColumns, ",")
+        spaces := maxX - len(line) - len(sortStr) - 2
+        line += strings.Repeat(" ", spaces) + sortStr
+    }
+
+    fmt.Fprintln(cv, line)
     return nil
 }
 
