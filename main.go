@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "os"
+    "time"
     "errors"
     "strings"
     "strconv"
@@ -303,6 +304,26 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
             return false, nil
 
+        case "d":
+            fallthrough
+        case "due":
+            if len(args) < 2 {
+                return false, errors.New("Give note id and the due date in format " + c.DueFormat)
+            }
+            note := getNoteFromArg(args[0], n)
+            if note == nil {
+                return false, errors.New("Could not find note with id")
+            }
+
+            dueStr := strings.Join(args[1:], " ")
+            due, err := time.Parse(c.DueFormat, dueStr)
+            if err != nil {
+                return false, errors.New("Invalid due date format used. Please use " + c.DueFormat)
+            }
+            note.Due = due
+            fmt.Printf("Due date set for note %v\n", note.Id)
+            return true, nil
+
         case "h":
             fallthrough
         case "help":
@@ -341,6 +362,7 @@ func printHelp(err error) {
     fmt.Println("t|tag <id> <tag>\tAdd tag for note with given id")
     fmt.Println("rt|rtag <id> <tag>\tRemote tag from note with given id")
     fmt.Println("ct|ctags <id>\t\tRemove all tags from note with given id")
+    fmt.Println("d|due <id> <due>\tSet due date for note with given id")
     fmt.Println("")
     fmt.Println("DELETING:")
     fmt.Println("clear\t\t\tDelete all notes")
