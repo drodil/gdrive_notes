@@ -295,7 +295,7 @@ func (n *NotesGui) increaseTagIndex(g *gocui.Gui, v *gocui.View) error {
 func (n *NotesGui) decreaseTagIndex(g *gocui.Gui, v *gocui.View) error {
     n.tagIdx--
     tags := n.Notes.GetTagKeys()
-    if n.tagIdx < -1 {
+    if n.tagIdx < -1 && len(tags) > 0 {
         n.tagIdx = len(tags) - 1
         n.tagFilter = tags[n.tagIdx]
     } else if n.tagIdx == -1 {
