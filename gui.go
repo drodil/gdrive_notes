@@ -308,7 +308,8 @@ func (n *NotesGui) decreaseTagIndex(g *gocui.Gui, v *gocui.View) error {
 func (n *NotesGui) gotoBottom(g *gocui.Gui, v *gocui.View) error {
     n.updateShownNotes()
     if len(n.shownNotes) > 0 {
-       n.idx = len(n.shownNotes) - 1
+        n.idx = len(n.shownNotes) - 1
+        n.selectedNote = n.shownNotes[n.idx]
     }
     return n.update(g)
 }
