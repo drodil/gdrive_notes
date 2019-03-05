@@ -69,3 +69,26 @@ func PrintVerticalLine() {
     c := color.New(color.FgHiBlack)
     c.Println(strings.Repeat("─", GetScreenWidth()))
 }
+
+func GetPriorityColor(n *Note) (*color.Color) {
+    c := color.New()
+    switch(n.Priority) {
+        case 0:
+            fallthrough
+        case 1:
+            c.Add(color.FgHiGreen)
+            break
+        case 2:
+            fallthrough
+        case 3:
+            c.Add(color.FgHiYellow)
+            break
+        case 4:
+            fallthrough
+        case 5:
+            c.Add(color.FgHiRed)
+            break
+    }
+    return c
+}
+

@@ -8,6 +8,8 @@ import (
     "net/http"
     "os"
     "errors"
+    "sort"
+    "strings"
 
     "golang.org/x/net/context"
     "golang.org/x/oauth2"
@@ -17,7 +19,7 @@ import (
 
 // NOTES functionality
 type Notes struct {
-    Notes []Note
+    notes []Note
     gdrive *drive.Service
     app_folder string
     file *drive.File
@@ -72,13 +74,13 @@ func (n *Notes) AddNote(note Note) (uint) {
     for _, tag := range n.config.DefaultTags {
         note.AddTag(tag)
     }
-    n.Notes = append(n.Notes, note)
+    n.notes = append(n.notes, note)
     return note.Id
 }
 
 func (n *Notes) FindNote(id uint) (*Note) {
-    for i, _ := range n.Notes {
-        note := &n.Notes[i]
+    for i, _ := range n.notes {
+        note := &n.notes[i]
         if note.Id == id {
             return note
         }
@@ -89,7 +91,7 @@ func (n *Notes) FindNote(id uint) (*Note) {
 
 func (n *Notes) GetMaxId() (uint) {
     var maxId uint
-    for _, note := range n.Notes {
+    for _, note := range n.notes {
         if note.Id > maxId {
             maxId = note.Id
         }
@@ -100,10 +102,10 @@ func (n *Notes) GetMaxId() (uint) {
 
 func (n *Notes) DeleteNote(id uint) (error) {
     found := false
-    for i := 0; i < len(n.Notes); i++ {
-        note := &n.Notes[i]
+    for i := 0; i < len(n.notes); i++ {
+        note := &n.notes[i]
         if note.Id == id {
-            n.Notes = append(n.Notes[:i], n.Notes[i+1:]...)
+            n.notes = append(n.notes[:i], n.notes[i+1:]...)
             i--
             found = true
         }
@@ -117,8 +119,8 @@ func (n *Notes) DeleteNote(id uint) (error) {
 
 func (n *Notes) GetTags() (map[string]int) {
     ret := map[string]int{}
-    for i := 0; i < len(n.Notes); i++ {
-        note := &n.Notes[i]
+    for i := 0; i < len(n.notes); i++ {
+        note := &n.notes[i]
         for _, tag := range note.Tags {
             _, ok := ret[tag]
             if ok {
@@ -138,6 +140,104 @@ func (n *Notes) GetTagKeys() ([]string) {
         keys = append(keys, k)
     }
     return keys
+}
+
+func (n *Notes) GetNotes() []*Note {
+    var ret[]*Note
+    for i, _ := range n.notes {
+        ret = append(ret, &n.notes[i])
+    }
+    return ret
+}
+
+func (n *Notes) SearchNotes(str string, notes []*Note) []*Note {
+    var ret []*Note
+    for _, note := range notes {
+        if note.MatchesSearch(str) {
+            ret = append(ret, note)
+        }
+    }
+    return ret
+}
+
+func (n *Notes) ClearNotes() {
+    n.notes = n.notes[:0]
+}
+
+func (n *Notes) FilterDoneNotes(notes[] *Note) []*Note {
+    var ret[]*Note
+    for _, note := range notes {
+        if note.Done {
+            continue
+        }
+        ret = append(ret, note)
+    }
+    return ret
+}
+
+func (n *Notes) FilterNotesByTag(tag string, notes []*Note) []*Note {
+    var ret []*Note
+    for _, note := range notes {
+        if note.HasTag(tag) {
+            ret = append(ret, note)
+        }
+    }
+    return ret
+}
+
+func (n *Notes) FilterNotesByPriority(prio uint, notes []*Note) []*Note {
+    var ret []*Note
+    for _, note := range notes {
+        if note.Priority >= prio {
+            ret = append(ret, note)
+        }
+    }
+    return ret
+}
+
+
+func (n *Notes) OrderNotes(columns []string, notes[]*Note) {
+    sort.Slice(notes, func(i, j int) bool {
+        ret := false
+        for _, col := range columns {
+            asc := true
+            if strings.HasPrefix(col, "-") {
+                asc = false
+                col = col[1:]
+            }
+
+            switch(col) {
+                case "prio":
+                    ret = notes[i].Priority < notes[j].Priority
+                    break
+                case "title":
+                    ret = notes[i].GetTitle() < notes[j].GetTitle()
+                    break
+                case "due":
+                    ret = notes[i].Due.Unix() < notes[j].Due.Unix()
+                    break
+                case "created":
+                    ret = notes[i].Created.Unix() < notes[j].Created.Unix()
+                    break
+                case "updated":
+                    ret = notes[i].Updated.Unix() < notes[j].Updated.Unix()
+                    break
+                case "id":
+                    ret = notes[i].Id > notes[j].Id
+                    break
+            }
+
+            if asc {
+                ret = !ret
+            }
+
+            if ret {
+                break
+            }
+        }
+
+        return ret
+    })
 }
 
 func (n *Notes) createNotesFile() (file *drive.File, err error) {
@@ -199,7 +299,7 @@ func (n *Notes) saveToken(path string, token *oauth2.Token) {
 }
 
 func (n *Notes) saveNotes() (err error) {
-    jsonStr, err := json.Marshal(n.Notes)
+    jsonStr, err := json.Marshal(n.notes)
     if err != nil {
         return err
     }
@@ -315,9 +415,9 @@ func (n *Notes) parseNotes() (err error) {
         return err
     }
 
-    n.Notes = notesJSON
-    if len(n.Notes) > 0 {
-        n.max_id = n.Notes[len(n.Notes)-1].Id
+    n.notes = notesJSON
+    if len(n.notes) > 0 {
+        n.max_id = n.notes[len(n.notes)-1].Id
     }
 
     return nil

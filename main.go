@@ -24,11 +24,7 @@ func handleListArgs(args []string, printer *NotesPrinter) {
     for i, arg := range args {
         if (arg == "--order" || arg == "-o") && len(args) > i + 1 {
             col := args[i+1]
-            if strings.HasPrefix(col, "-") {
-                printer.SortAsc = false
-                col = col[1:]
-            }
-            printer.SortColumn = col
+            printer.SortColumns = strings.Split(col, ",")
         }
 
         if (arg == "--search" || arg == "-s") && len(args) > i + 1 {
@@ -103,7 +99,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
                 ret, err := YesNoQuestion("Are you sure you want to delete all notes [y/n]? ")
                 if err == nil {
                     if ret {
-                        n.Notes = n.Notes[:0]
+                        n.ClearNotes()
                         fmt.Println("All notes have been deleted")
                         return true, nil
                     }
@@ -361,8 +357,8 @@ func printHelp(err error) {
     fmt.Println("u|urls <id>\t\tOpen URLs in note in browser")
     fmt.Println("")
     fmt.Println("Additional parameters for listing:")
-    fmt.Println("--order|-o <column>\tOrder by column. Has to be one of the following:")
-    fmt.Println("\t\t\ttitle,prio,created,updated,due")
+    fmt.Println("--order|-o <columns>\tComma separated list of sort columns. Has to be one of the following:")
+    fmt.Println("\t\t\tid,title,prio,created,updated,due")
     fmt.Println("--search|-s <string>\tSearch for notes with given content")
     fmt.Println("--prio|-p <int>\tSearch for notes with this or greater priority")
     fmt.Println("--tag|-t <tag>\tSearch for notes with this tag")

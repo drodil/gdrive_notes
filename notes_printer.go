@@ -4,7 +4,6 @@ import(
     "fmt"
     "strings"
     "strconv"
-    "sort"
     "time"
 
     "github.com/fatih/color"
@@ -21,8 +20,7 @@ type NotesPrinter struct {
     ShowDue bool
     MaxTitleLength int
     TimeFormat string
-    SortColumn string
-    SortAsc bool
+    SortColumns []string
     SearchStr string
     PrioFilter uint
     TagFilter string
@@ -46,8 +44,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.ShowPriority = config.UsePriority
     inst.ShowDue = config.UseDue
     inst.TimeFormat = config.TimeFormat
-    inst.SortColumn = "Id"
-    inst.SortAsc = true
+    inst.SortColumns = append(inst.SortColumns, "id")
     inst.SearchStr = ""
     inst.TagFilter = ""
     inst.PrioFilter = 0
@@ -88,38 +85,39 @@ func (p *NotesPrinter) calculateColumnWidths(n *Notes) {
 }
 
 func (p *NotesPrinter) Print(n *Notes) {
-    p.calculateColumnWidths(n)
-    sort.Slice(n.Notes, func(i, j int) bool {
-        ret := false
-        switch(p.SortColumn) {
-            case "prio":
-                p.ShowPriority = true
-                ret = n.Notes[i].Priority < n.Notes[j].Priority
-                break
-            case "title":
-                ret = n.Notes[i].GetTitle() < n.Notes[j].GetTitle()
-                break
-            case "due":
-                p.ShowDue = true
-                ret = n.Notes[i].Due.Unix() < n.Notes[j].Due.Unix()
-                break
+    notes := n.GetNotes()
+    notes = n.FilterNotesByPriority(p.PrioFilter, notes)
+
+    if p.SkipDone {
+        notes = n.FilterDoneNotes(notes)
+    }
+
+    if len(p.SearchStr) > 0 {
+        notes = n.SearchNotes(p.SearchStr, notes)
+    }
+
+    if len(p.TagFilter) > 0 {
+        notes = n.FilterNotesByTag(p.TagFilter, notes)
+    }
+
+    n.OrderNotes(p.SortColumns, notes)
+
+    for _, col := range p.SortColumns {
+        switch(col) {
             case "created":
                 p.ShowCreated = true
-                ret = n.Notes[i].Created.Unix() < n.Notes[j].Created.Unix()
                 break
             case "updated":
                 p.ShowUpdated = true
-                ret = n.Notes[i].Updated.Unix() < n.Notes[j].Updated.Unix()
                 break
-            default:
-                ret = n.Notes[i].Id < n.Notes[j].Id
+            case "due":
+                p.ShowDue = true
+                break
+            case "prio":
+                p.ShowPriority = true
+                break
         }
-
-        if !p.SortAsc {
-            return !ret
-        }
-        return ret
-    })
+    }
 
     if p.PrintDetails {
         p.PrintHeader = false
@@ -129,25 +127,17 @@ func (p *NotesPrinter) Print(n *Notes) {
         p.printHeader()
     }
 
+    p.calculateColumnWidths(n)
     notesPrinted := false
-    for _, note := range n.Notes {
-        if p.SkipDone && note.Done {
-            continue
-        }
-        if len(p.SearchStr) > 0 && !note.MatchesSearch(p.SearchStr) {
-            continue
-        }
+    for _, note := range notes {
         if p.ShowPriority && note.Priority < p.PrioFilter {
-            continue
-        }
-        if len(p.TagFilter) > 0 && !note.HasTag(p.TagFilter) {
             continue
         }
 
         if p.PrintDetails {
-           p.PrintFullNote(&note)
+           p.PrintFullNote(note)
         } else {
-            p.PrintNote(&note)
+            p.PrintNote(note)
             fmt.Print("\n")
         }
         notesPrinted = true
@@ -213,7 +203,7 @@ func (p *NotesPrinter) PrintNote(n *Note) {
 
     fmt.Printf(format, preview)
     if p.ShowPriority {
-        c := p.getPriorityColor(n)
+        c := GetPriorityColor(n)
         c.Printf("%-" + strconv.Itoa(p.prioSize) + "v", n.Priority)
     }
 
@@ -242,39 +232,13 @@ func (p *NotesPrinter) PrintNote(n *Note) {
     }
 }
 
-func (p *NotesPrinter) getPriorityColor(n *Note) (*color.Color) {
-    c := color.New()
-    if !p.UseColor {
-        c.DisableColor()
-    }
-
-    switch(n.Priority) {
-        case 0:
-            fallthrough
-        case 1:
-            c.Add(color.FgHiGreen)
-            break
-        case 2:
-            fallthrough
-        case 3:
-            c.Add(color.FgHiYellow)
-            break
-        case 4:
-            fallthrough
-        case 5:
-            c.Add(color.FgHiRed)
-            break
-    }
-    return c
-}
-
 func (p *NotesPrinter) PrintFullNote(n *Note) {
     c := color.New(color.FgHiGreen).Add(color.Underline)
     PrintVerticalLine()
     c.Printf("NOTE %v\n\n", n.Id)
     if p.ShowPriority {
         fmt.Print("Priority: ")
-        c = p.getPriorityColor(n)
+        c = GetPriorityColor(n)
         c.Printf("%v\n", n.Priority)
     }
 

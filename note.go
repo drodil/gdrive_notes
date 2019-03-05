@@ -125,11 +125,11 @@ func (n *Note) EditInEditor() (bool, error) {
 }
 
 func (n *Note) MatchesSearch(str string) (bool) {
-    if strings.Contains(n.Content, str) {
+    if strings.Contains(strings.ToLower(n.Content), strings.ToLower(str)) {
         return true
     }
-    tagsStr := strings.Join(n.Tags, " ")
-    if strings.Contains(tagsStr, str) {
+    tagsStr := strings.ToLower(strings.Join(n.Tags, " "))
+    if strings.Contains(tagsStr, strings.ToLower(str)) {
         return true
     }
     return false

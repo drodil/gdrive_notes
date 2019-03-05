@@ -20,6 +20,7 @@ const (
 type NotesGui struct {
     Notes *Notes
     Config *Configuration
+    shownNotes []*Note
     preview bool
     idx int
     tagIdx int
@@ -41,6 +42,7 @@ func (n *NotesGui) Start() (error) {
     }
 
     n.tagIdx = -1
+    n.updateShownNotes()
 
     defer g.Close()
     g.SetManagerFunc(n.layout)
@@ -132,6 +134,7 @@ func (n *NotesGui) Start() (error) {
         f := func(char rune) func(*gocui.Gui, *gocui.View) error {
             return func(g *gocui.Gui, v *gocui.View) error {
                 n.cmd += string(char)
+                n.updateShownNotes()
                 return n.update(g)
             }
         }
@@ -180,7 +183,6 @@ func (n *NotesGui) Start() (error) {
 }
 
 func (n *NotesGui) layout(g *gocui.Gui) (error) {
-    // TODO: Add some colors
     maxX, maxY := g.Size()
     _, err := g.SetView(COMMAND_VIEW, 0, maxY-2, maxX, maxY)
     if err != nil && err != gocui.ErrUnknownView {
@@ -192,6 +194,7 @@ func (n *NotesGui) layout(g *gocui.Gui) (error) {
         return err
     }
     v.Frame = false
+    v.FgColor = gocui.AttrBold
 
     _, err = g.SetView(LIST_VIEW, 0, 0, maxX/2-1, maxY-2)
     if err != nil && err != gocui.ErrUnknownView {
@@ -213,6 +216,46 @@ func (n *NotesGui) layout(g *gocui.Gui) (error) {
     return nil
 }
 
+func (n *NotesGui) updateShownNotes() {
+    originalLen := len(n.shownNotes)
+
+    n.shownNotes = n.Notes.GetNotes()
+    if strings.HasPrefix(n.cmd, "/") {
+        n.searchStr = n.cmd[1:]
+        if len(n.searchStr) > 0 {
+            n.shownNotes = n.Notes.SearchNotes(n.searchStr, n.shownNotes)
+        }
+    }
+
+    if !n.showDone {
+        n.shownNotes = n.Notes.FilterDoneNotes(n.shownNotes)
+    }
+
+    if len(n.tagFilter) > 0 {
+        n.shownNotes = n.Notes.FilterNotesByTag(n.tagFilter, n.shownNotes)
+    }
+
+    if len(n.shownNotes) == 0 {
+        n.selectedNote = nil
+        return
+    }
+
+    if len(n.shownNotes) != originalLen && n.selectedNote != nil {
+        for i, note := range n.shownNotes {
+            if note.Id == n.selectedNote.Id {
+                n.idx = i
+                break
+            }
+        }
+    }
+
+    if len(n.shownNotes) > n.idx {
+        n.selectedNote = n.shownNotes[n.idx]
+    } else {
+       n.selectedNote = n.shownNotes[0]
+    }
+}
+
 func (n *NotesGui) toggleContent(g *gocui.Gui, v *gocui.View) error {
     n.showNoteContent = !n.showNoteContent
     return n.update(g)
@@ -220,17 +263,19 @@ func (n *NotesGui) toggleContent(g *gocui.Gui, v *gocui.View) error {
 
 func (n *NotesGui) increaseIndex(g *gocui.Gui, v *gocui.View) error {
     n.idx++
-    if n.idx >= len(n.Notes.Notes) {
+    if n.idx >= len(n.shownNotes) {
         n.idx = 0
     }
+    n.updateShownNotes()
     return n.update(g)
 }
 
 func (n *NotesGui) decreaseIndex(g *gocui.Gui, v *gocui.View) error {
     n.idx--
     if n.idx < 0 {
-        n.idx = len(n.Notes.Notes) - 1
+        n.idx = len(n.shownNotes) - 1
     }
+    n.updateShownNotes()
     return n.update(g)
 }
 
@@ -243,6 +288,7 @@ func (n *NotesGui) increaseTagIndex(g *gocui.Gui, v *gocui.View) error {
     } else {
         n.tagFilter = tags[n.tagIdx]
     }
+    n.updateShownNotes()
     return n.update(g)
 }
 
@@ -255,12 +301,14 @@ func (n *NotesGui) decreaseTagIndex(g *gocui.Gui, v *gocui.View) error {
     } else if n.tagIdx == -1 {
         n.tagFilter = ""
     }
+    n.updateShownNotes()
     return n.update(g)
 }
 
 func (n *NotesGui) gotoBottom(g *gocui.Gui, v *gocui.View) error {
-    if len(n.Notes.Notes) > 0 {
-       n.idx = len(n.Notes.Notes) - 1
+    n.updateShownNotes()
+    if len(n.shownNotes) > 0 {
+       n.idx = len(n.shownNotes) - 1
     }
     return n.update(g)
 }
@@ -305,6 +353,7 @@ func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
         n.Notes.AddNote(note)
         n.unsavedModifications = true
     }
+    n.updateShownNotes()
     return n.update(g)
 }
 
@@ -313,9 +362,8 @@ func (n *NotesGui) deleteNote(g *gocui.Gui, v *gocui.View) error {
         return nil
     }
     n.Notes.DeleteNote(n.selectedNote.Id)
-    n.decreaseIndex(g, v)
     n.unsavedModifications = true
-    return n.update(g)
+    return n.decreaseIndex(g, v)
 }
 
 func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
@@ -326,6 +374,7 @@ func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
     n.selectedNote.Done = !n.selectedNote.Done
     n.selectedNote.Updated = now
     n.unsavedModifications = true
+    n.updateShownNotes()
     return n.update(g)
 }
 
@@ -335,9 +384,9 @@ func (n *NotesGui) startSearch(g *gocui.Gui, v *gocui.View) error {
     if err != nil {
         return err
     }
+    n.updateShownNotes()
     return n.update(g)
 }
-
 
 func (n *NotesGui) startCommand(g *gocui.Gui, v *gocui.View) error {
     n.cmd = ":"
@@ -353,6 +402,7 @@ func (n *NotesGui) backspaceCommand(g *gocui.Gui, v *gocui.View) error {
     if sz > 0 {
         n.cmd = n.cmd[:sz-1]
     }
+    n.updateShownNotes()
     return n.update(g)
 }
 
@@ -362,6 +412,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
         if err != nil {
             return err
         }
+        n.updateShownNotes()
         return n.update(g)
     }
 
@@ -408,6 +459,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             note.Content = strings.Join(parts[1:], " ")
             n.Notes.AddNote(note)
             n.unsavedModifications = true
+            n.updateShownNotes()
             break
 
         default:
@@ -468,6 +520,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
 func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
     n.cmd = ""
     n.searchStr = ""
+    n.updateShownNotes()
     _, err := g.SetCurrentView(LIST_VIEW)
     if err != nil {
         return err
@@ -477,6 +530,7 @@ func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
 
 func (n *NotesGui) toggleShowDone(g *gocui.Gui, v *gocui.View) error {
     n.showDone = !n.showDone
+    n.updateShownNotes()
     return n.update(g)
 }
 
@@ -486,36 +540,6 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
         return err
     }
 
-    if len(n.Notes.Notes) > 0 {
-        n.selectedNote = &n.Notes.Notes[n.idx]
-    } else {
-        n.selectedNote = nil
-    }
-
-    if strings.HasPrefix(n.cmd, "/") {
-        n.searchStr = n.cmd[1:]
-        if len(n.searchStr) > 0 {
-            haveMatches := false
-            for _, note := range n.Notes.Notes {
-                if note.MatchesSearch(n.searchStr) {
-                    haveMatches = true
-                    break
-                }
-            }
-            if haveMatches && n.selectedNote != nil && !n.selectedNote.MatchesSearch(n.searchStr) {
-                return n.increaseIndex(g, v)
-            }
-        }
-    }
-
-    if !n.showDone && n.selectedNote != nil && n.selectedNote.Done {
-        return n.increaseIndex(g, v)
-    }
-
-    if len(n.tagFilter) > 0 && n.selectedNote != nil && !n.selectedNote.HasTag(n.tagFilter) {
-        return n.increaseIndex(g, v)
-    }
-
     v.Clear()
     v.Title = "All"
     if len(n.tagFilter) > 0 {
@@ -523,19 +547,7 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
     }
 
     notesRendered := false
-    for _, note := range n.Notes.Notes {
-        if len(n.searchStr) > 0 && !note.MatchesSearch(n.searchStr) {
-            continue
-        }
-
-        if !n.showDone && note.Done {
-            continue
-        }
-
-        if len(n.tagFilter) > 0 && !note.HasTag(n.tagFilter) {
-            continue
-        }
-
+    for _, note := range n.shownNotes {
         notesRendered = true
         if n.selectedNote != nil && n.selectedNote.Id == note.Id {
             c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
@@ -559,32 +571,33 @@ func (n *NotesGui) updatePreviewView(g *gocui.Gui) error {
         return err
     }
 
-    // TODO: Add some color here
+    bold := color.New(color.Bold)
     pv.Clear()
     if n.selectedNote != nil && !n.showNoteContent {
         pv.Title = "Details"
-        fmt.Fprintln(pv, "ID:       ", n.selectedNote.Id)
+        fmt.Fprintln(pv, bold.Sprint("ID:       "), n.selectedNote.Id)
         if n.Config.UsePriority {
-            fmt.Fprintln(pv, "Priority: ", n.selectedNote.Priority)
+            c := GetPriorityColor(n.selectedNote)
+            fmt.Fprintln(pv, bold.Sprint("Priority: "), c.Sprint(n.selectedNote.Priority))
         }
 
         if n.Config.UseDue {
             if !n.selectedNote.Due.IsZero() {
-                fmt.Fprintln(pv, "Due:       ", n.selectedNote.Due.Format(n.Config.TimeFormat))
+                fmt.Fprintln(pv, bold.Sprint("Due:       "), n.selectedNote.Due.Format(n.Config.TimeFormat))
             }
         }
 
         if len(n.selectedNote.Tags) > 0 {
-            fmt.Fprintln(pv, "Tags:     ", strings.Join(n.selectedNote.Tags, ", "))
+            fmt.Fprintln(pv, bold.Sprint("Tags:     "), strings.Join(n.selectedNote.Tags, ", "))
         }
 
         noteUrls := n.selectedNote.GetUrls()
         if len(noteUrls) > 0 {
-            fmt.Fprintln(pv, "URLs:     ", len(noteUrls))
+            fmt.Fprintln(pv, bold.Sprint("URLs:     "), len(noteUrls))
         }
 
-        fmt.Fprintln(pv, "Created:  ", n.selectedNote.Created.Format(n.Config.TimeFormat))
-        fmt.Fprintln(pv, "Updated:  ", n.selectedNote.Updated.Format(n.Config.TimeFormat))
+        fmt.Fprintln(pv, bold.Sprint("Created:  "), n.selectedNote.Created.Format(n.Config.TimeFormat))
+        fmt.Fprintln(pv, bold.Sprint("Updated:  "), n.selectedNote.Updated.Format(n.Config.TimeFormat))
     } else if n.selectedNote != nil {
         pv.Title = "Content"
         fmt.Fprint(pv, n.selectedNote.Content)
