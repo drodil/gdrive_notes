@@ -20,6 +20,7 @@ type NotesPrinter struct {
     ShowDue bool
     MaxTitleLength int
     TimeFormat string
+    DueFormat string
     SortColumns []string
     SearchStr string
     PrioFilter uint
@@ -30,6 +31,7 @@ type NotesPrinter struct {
     titleSize int
     prioSize int
     timeSize int
+    dueSize int
 }
 
 func NewNotesPrinter(config *Configuration) (NotesPrinter) {
@@ -44,6 +46,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.ShowPriority = config.UsePriority
     inst.ShowDue = config.UseDue
     inst.TimeFormat = config.TimeFormat
+    inst.DueFormat = config.DueFormat
     inst.SortColumns = append(inst.SortColumns, "id")
     inst.SearchStr = ""
     inst.TagFilter = ""
@@ -62,6 +65,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
 func (p *NotesPrinter) calculateColumnWidths(n *Notes) {
     now := time.Now()
     p.timeSize = len(now.Format(p.TimeFormat)) + 2
+    p.dueSize = len(now.Format(p.DueFormat)) + 2
     p.idSize = len(string(n.GetMaxId())) + 3
 
     w := GetScreenWidth() - 2
@@ -73,7 +77,7 @@ func (p *NotesPrinter) calculateColumnWidths(n *Notes) {
         w -= p.prioSize
     }
     if p.ShowDue {
-        w -= p.timeSize
+        w -= p.dueSize
     }
     if p.ShowCreated {
         w -= p.timeSize
@@ -170,7 +174,7 @@ func (p *NotesPrinter) printHeader() {
         c.Printf("%-" + strconv.Itoa(p.prioSize) + "v", "PRIO")
     }
     if p.ShowDue {
-        c.Printf("%-" + strconv.Itoa(p.timeSize) + "v", "DUE")
+        c.Printf("%-" + strconv.Itoa(p.dueSize) + "v", "DUE")
     }
     if p.ShowCreated {
         c.Printf("%-" + strconv.Itoa(p.timeSize) + "v", "CREATED")
@@ -210,9 +214,9 @@ func (p *NotesPrinter) PrintNote(n *Note) {
     if p.ShowDue {
         due := ""
         if !n.Due.IsZero() {
-           due = n.Due.Format(p.TimeFormat)
+           due = n.Due.Format(p.DueFormat)
         }
-        fmt.Printf("%-" + strconv.Itoa(p.timeSize) + "v", due)
+        fmt.Printf("%-" + strconv.Itoa(p.dueSize) + "v", due)
     }
 
     if p.ShowCreated {
@@ -243,7 +247,7 @@ func (p *NotesPrinter) PrintFullNote(n *Note) {
     }
 
     if p.ShowDue {
-        fmt.Println("Due: " + n.Due.Format(p.TimeFormat))
+        fmt.Println("Due: " + n.Due.Format(p.DueFormat))
     }
 
     if len(n.Tags) > 0 {

@@ -1,6 +1,7 @@
 package main
 
 import(
+    "fmt"
     "os"
     "io/ioutil"
     "strings"
@@ -11,6 +12,7 @@ import(
 type Configuration struct {
     Md5Checksum string `json:"md5Checksum"`
     TimeFormat string `json:"time_format"`
+    DueFormat string `json:"due_format"`
     Color bool `json:"color"`
     UsePriority bool `json:"use_priority"`
     UseDue bool `json:"use_due"`
@@ -50,6 +52,12 @@ func (c *Configuration) Init() (error) {
 }
 
 func (c *Configuration) Configure() {
+    fmt.Println("Google Drive TODO notes configuration")
+    PrintVerticalLine()
+
+    fmt.Println("")
+    fmt.Println("This is machine specific configuration for look&feel of the tool")
+
     for {
         color, err := YesNoQuestion("Use color output [y/n]? ")
         if err == nil {
@@ -82,6 +90,17 @@ func (c *Configuration) Configure() {
                 c.TimeFormat = format
             }
             break
+        }
+    }
+
+    for {
+        format, err := Question("Due date format to use (default dd.mm.YYYY): ")
+        if err == nil {
+           c.DueFormat = "02.01.2006"
+           if len(format) > 1 {
+                c.TimeFormat = format
+           }
+           break
         }
     }
 

@@ -750,7 +750,7 @@ func (n *NotesGui) updatePreviewView(g *gocui.Gui) error {
 
         if n.Config.UseDue {
             if !n.selectedNote.Due.IsZero() {
-                fmt.Fprintln(pv, bold.Sprint("Due:       "), n.selectedNote.Due.Format(n.Config.TimeFormat))
+                fmt.Fprintln(pv, bold.Sprint("Due:       "), n.selectedNote.Due.Format(n.Config.DueFormat))
             }
         }
 
