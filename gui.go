@@ -4,6 +4,7 @@ import (
     "fmt"
     "strings"
     "strconv"
+    "time"
 
     "github.com/jroimartin/gocui"
     "github.com/fatih/color"
@@ -529,9 +530,14 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
                 break
             }
             n.unsavedModifications = n.selectedNote.ClearTags()
+            n.statusString = "Tags cleared from note"
             break
 
         case "p":
+            if !n.Config.UsePriority {
+                return nil
+            }
+
             if n.selectedNote == nil {
                 n.statusString = "Could not find note"
                 break
@@ -544,6 +550,27 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             }
             n.selectedNote.Priority = uint(i)
             n.unsavedModifications = true
+            n.statusString = "Priority set for note"
+            break
+
+        case "d":
+            if !n.Config.UseDue {
+                return nil
+            }
+
+            if n.selectedNote == nil {
+                n.statusString = "Could not find note"
+                break
+            }
+            dueStr := strings.Join(parts[1:], "")
+            due, err := time.Parse(n.Config.DueFormat, dueStr)
+            if err != nil {
+                n.statusString = "Invalid due date format. Please use " + n.Config.DueFormat
+                break
+            }
+            n.selectedNote.Due = due
+            n.unsavedModifications = true
+            n.statusString = "Due date set for note"
             break
 
         default:
@@ -597,12 +624,21 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, ":at <tag1>,<tag2> - Add tags to selected note")
     fmt.Fprintln(v, ":rt <tag1>,<tag2> - Remove tags from selected note")
     fmt.Fprintln(v, ":ct - Clear tags from selected note")
-    fmt.Fprintln(v, ":p <prio> - Set priority for selected note")
+    if n.Config.UsePriority {
+       fmt.Fprintln(v, ":p <prio> - Set priority for selected note")
+    }
+    if n.Config.UseDue {
+        fmt.Fprintln(v, ":d <due> - Set due date for selected note")
+    }
     fmt.Fprintln(v, "/<search> - Search for notes. Press <enter> to finish, <esc> to exit")
     fmt.Fprintln(v, "<F2> - Show also done notes")
-    fmt.Fprintln(v, "<F3> - Order notes by priority")
+    if n.Config.UsePriority {
+        fmt.Fprintln(v, "<F3> - Order notes by priority")
+    }
     fmt.Fprintln(v, "<F4> - Order notes by title")
-    fmt.Fprintln(v, "<F5> - Order notes by due")
+    if n.Config.UseDue {
+        fmt.Fprintln(v, "<F5> - Order notes by due")
+    }
     fmt.Fprintln(v, "<F6> - Order notes by id")
     fmt.Fprintln(v, "<F7> - Order notes by created")
     fmt.Fprintln(v, "<F8> - Order notes by updated")
@@ -750,7 +786,7 @@ func (n *NotesGui) updatePreviewView(g *gocui.Gui) error {
 
         if n.Config.UseDue {
             if !n.selectedNote.Due.IsZero() {
-                fmt.Fprintln(pv, bold.Sprint("Due:       "), n.selectedNote.Due.Format(n.Config.DueFormat))
+                fmt.Fprintln(pv, bold.Sprint("Due:      "), n.selectedNote.Due.Format(n.Config.DueFormat))
             }
         }
 

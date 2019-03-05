@@ -180,6 +180,9 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "p":
             fallthrough
         case "prio":
+            if !c.UsePriority {
+                break
+            }
             if len(args) < 2 {
                 return false, errors.New("Give note id and new priority")
             }
@@ -262,7 +265,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
                 return false, errors.New("Could not find note with id")
             }
 
-
             ret := note.AddTag(args[1])
             if ret {
                 fmt.Printf("Added tag \"%v\" for note %v\n", args[1], note.Id)
@@ -307,6 +309,10 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "d":
             fallthrough
         case "due":
+            if !c.UseDue {
+                break
+            }
+
             if len(args) < 2 {
                 return false, errors.New("Give note id and the due date in format " + c.DueFormat)
             }
@@ -327,7 +333,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "h":
             fallthrough
         case "help":
-            printHelp(nil)
+            printHelp(nil, c)
             return false, nil
 
         case "config":
@@ -338,7 +344,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
     return false, errors.New("Invalid command: " + command)
 }
 
-func printHelp(err error) {
+func printHelp(err error, c *Configuration) {
     if err != nil {
         fmt.Println(err)
     }
@@ -358,11 +364,15 @@ func printHelp(err error) {
     fmt.Println("e|edit <id>\t\tEdit note with given id")
     fmt.Println("a|add\t\t\tAdd new note with $EDITOR")
     fmt.Println("md|done <id>\t\tMark note done with given id")
-    fmt.Println("p|prio <id> <prio>\tSet priority of the note")
+    if c.UsePriority {
+        fmt.Println("p|prio <id> <prio>\tSet priority of the note")
+    }
     fmt.Println("t|tag <id> <tag>\tAdd tag for note with given id")
     fmt.Println("rt|rtag <id> <tag>\tRemote tag from note with given id")
     fmt.Println("ct|ctags <id>\t\tRemove all tags from note with given id")
-    fmt.Println("d|due <id> <due>\tSet due date for note with given id")
+    if c.UseDue {
+       fmt.Println("d|due <id> <due>\tSet due date for note with given id")
+    }
     fmt.Println("")
     fmt.Println("DELETING:")
     fmt.Println("clear\t\t\tDelete all notes")
@@ -379,7 +389,9 @@ func printHelp(err error) {
     fmt.Println("--order|-o <columns>\tComma separated list of sort columns. Has to be one of the following:")
     fmt.Println("\t\t\tid,title,prio,created,updated,due")
     fmt.Println("--search|-s <string>\tSearch for notes with given content")
-    fmt.Println("--prio|-p <int>\tSearch for notes with this or greater priority")
+    if c.UsePriority {
+        fmt.Println("--prio|-p <int>\tSearch for notes with this or greater priority")
+    }
     fmt.Println("--tag|-t <tag>\tSearch for notes with this tag")
     fmt.Println("-la\t\tPrint whole notes instead table")
 }
@@ -401,7 +413,7 @@ func main() {
 
     update, err := handleArgs(os.Args[1:], &notes, &config)
     if err != nil {
-        printHelp(err)
+        printHelp(err, &config)
         os.Exit(0)
     }
 

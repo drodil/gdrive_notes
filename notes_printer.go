@@ -57,7 +57,7 @@ func NewNotesPrinter(config *Configuration) (NotesPrinter) {
     inst.doneSize = 6
     inst.titleSize = 30
     inst.timeSize = 12
-    inst.prioSize = 4
+    inst.prioSize = 6
 
     return inst
 }
@@ -127,11 +127,11 @@ func (p *NotesPrinter) Print(n *Notes) {
         p.PrintHeader = false
     }
 
+    p.calculateColumnWidths(n)
     if p.PrintHeader {
         p.printHeader()
     }
 
-    p.calculateColumnWidths(n)
     notesPrinted := false
     for _, note := range notes {
         if p.ShowPriority && note.Priority < p.PrioFilter {
