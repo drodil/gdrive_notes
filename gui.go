@@ -22,6 +22,8 @@ type NotesGui struct {
     Config *Configuration
     preview bool
     idx int
+    tagIdx int
+    tagFilter string
     selectedNote *Note
     cmd string
     statusString string
@@ -37,6 +39,8 @@ func (n *NotesGui) Start() (error) {
     if err != nil {
         return err
     }
+
+    n.tagIdx = -1
 
     defer g.Close()
     g.SetManagerFunc(n.layout)
@@ -54,6 +58,17 @@ func (n *NotesGui) Start() (error) {
     if err != nil {
         return err
     }
+
+    err = g.SetKeybinding(LIST_VIEW, 'h', gocui.ModNone, n.increaseTagIndex)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding(LIST_VIEW, 'l', gocui.ModNone, n.decreaseTagIndex)
+    if err != nil {
+        return err
+    }
+
 
     err = g.SetKeybinding(LIST_VIEW, 'G', gocui.ModNone, n.gotoBottom)
     if err != nil {
@@ -215,6 +230,30 @@ func (n *NotesGui) decreaseIndex(g *gocui.Gui, v *gocui.View) error {
     n.idx--
     if n.idx < 0 {
         n.idx = len(n.Notes.Notes) - 1
+    }
+    return n.update(g)
+}
+
+func (n *NotesGui) increaseTagIndex(g *gocui.Gui, v *gocui.View) error {
+    n.tagIdx++
+    tags := n.Notes.GetTagKeys()
+    if n.tagIdx >= len(tags) {
+        n.tagIdx = -1
+        n.tagFilter = ""
+    } else {
+        n.tagFilter = tags[n.tagIdx]
+    }
+    return n.update(g)
+}
+
+func (n *NotesGui) decreaseTagIndex(g *gocui.Gui, v *gocui.View) error {
+    n.tagIdx--
+    tags := n.Notes.GetTagKeys()
+    if n.tagIdx < -1 {
+        n.tagIdx = len(tags) - 1
+        n.tagFilter = tags[n.tagIdx]
+    } else if n.tagIdx == -1 {
+        n.tagFilter = ""
     }
     return n.update(g)
 }
@@ -411,6 +450,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, ":q! - Quit without saving")
     fmt.Fprintln(v, ":wq - Save and quit")
     fmt.Fprintln(v, "<j> / <k> - Move up and down")
+    fmt.Fprintln(v, "<h> / <l> - Move left and right between tags")
     fmt.Fprintln(v, "a - Add new note")
     fmt.Fprintln(v, "D - Delete selected note")
     fmt.Fprintln(v, "e - Edit selected note")
@@ -472,8 +512,16 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
         return n.increaseIndex(g, v)
     }
 
+    if len(n.tagFilter) > 0 && n.selectedNote != nil && !n.selectedNote.HasTag(n.tagFilter) {
+        return n.increaseIndex(g, v)
+    }
+
     v.Clear()
-    v.Title = "Notes"
+    v.Title = "All"
+    if len(n.tagFilter) > 0 {
+        v.Title = n.tagFilter
+    }
+
     notesRendered := false
     for _, note := range n.Notes.Notes {
         if len(n.searchStr) > 0 && !note.MatchesSearch(n.searchStr) {
@@ -481,6 +529,10 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
         }
 
         if !n.showDone && note.Done {
+            continue
+        }
+
+        if len(n.tagFilter) > 0 && !note.HasTag(n.tagFilter) {
             continue
         }
 

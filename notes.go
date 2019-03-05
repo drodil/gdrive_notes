@@ -131,6 +131,15 @@ func (n *Notes) GetTags() (map[string]int) {
     return ret
 }
 
+func (n *Notes) GetTagKeys() ([]string) {
+    tags := n.GetTags()
+    keys := make([]string, 0, len(tags))
+    for k := range tags {
+        keys = append(keys, k)
+    }
+    return keys
+}
+
 func (n *Notes) createNotesFile() (file *drive.File, err error) {
     new_file := &drive.File{Name: "notes.json", Parents: []string{"appDataFolder"}}
     ret, err := n.gdrive.Files.Create(new_file).Do()

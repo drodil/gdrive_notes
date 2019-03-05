@@ -1,6 +1,7 @@
 # GUI commands:
 
 * `j` / `k`: Move up down
+* `h` / `l`: Move left / right between tags
 * `:q`: Quit
 * `:q!`: Quit without saving
 * `:qw`: Save and quit
