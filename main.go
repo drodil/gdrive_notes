@@ -7,7 +7,6 @@ import (
     "errors"
     "strings"
     "strconv"
-    "time"
 )
 
 func getNoteFromArg(arg string, n *Notes) (*Note) {
@@ -62,7 +61,6 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
 
     command := args[0]
     args = args[1:]
-    now := time.Now()
 
     switch command {
         // Quick add note
@@ -72,7 +70,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
 
             content := strings.Join(args, " ")
-            note := Note{Content: content, Priority: 0, Done: false, Created: now}
+            note := Note{Content: content, Priority: c.DefaultPriority}
             id := n.AddNote(note)
             fmt.Printf("Added new note \"%v\" with id %v\n", note.GetTitle(), id)
             return true, nil
@@ -80,7 +78,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "a":
             fallthrough
         case "add":
-            note := Note{Created: now, Priority: 0}
+            note := Note{Priority: c.DefaultPriority}
             updated, err := note.EditInEditor()
             if err != nil {
                 return false, err

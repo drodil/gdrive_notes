@@ -12,16 +12,23 @@
 * `G`: Go to bottom of the list
 * `:h`: Print help
 * `:a <note>`: Quick add note
+* `:at <tag1>,<tag2>`: Add tags to selected note
+* `:rt <tag1>,<tag2>`: Remove tags from selected note
+* `:ct`: Clear all tags from selected note
+* `:p <prio>`: Set priority for the selected note
 * `/<search>`: Search for notes. Press `<enter>` to finish searching, `<esc>` to cancel
-* `<F2>` - Show also done notes
-* `<F3>` - Order notes by priority
-* `<F4>` - Order notes by title
-* `<F5>` - Order notes by due
-* `<F6>` - Order notes by id
-* `<F7>` - Order notes by created
-* `<F8>` - Order notes by updated
+* `<F2>`: Show also done notes
+* `<F3>`: Order notes by priority
+* `<F4>`: Order notes by title
+* `<F5>`: Order notes by due
+* `<F6>`: Order notes by id
+* `<F7>`: Order notes by created
+* `<F8>`: Order notes by updated
 
 ## TODO:
 
-* Tags
 * Undo
+* Grouping in list view
+    * Per due date
+    * Priority
+    * ...

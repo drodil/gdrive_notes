@@ -73,6 +73,7 @@ func (n *Notes) SaveNotes() (error) {
 
 func (n *Notes) AddNote(note Note) (uint) {
     note.Id = n.max_id + 1
+    note.Created = time.Now()
 
     // Add default tags
     for _, tag := range n.config.DefaultTags {

@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
     "strings"
-    "time"
+    "strconv"
 
     "github.com/jroimartin/gocui"
     "github.com/fatih/color"
@@ -377,8 +377,7 @@ func (n *NotesGui) editNote(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
-    now := time.Now()
-    note := Note{Created: now, Priority: 0}
+    note := Note{Priority: n.Config.DefaultPriority}
     modified, err := note.EditInEditor()
     if err != nil {
         return err
@@ -487,8 +486,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             return n.showHelp(g)
 
         case "a":
-            now := time.Now()
-            note := Note{Created: now, Priority: 0}
+            note := Note{Priority: n.Config.DefaultPriority}
             note.Content = strings.Join(parts[1:], " ")
             n.Notes.AddNote(note)
             n.unsavedModifications = true
@@ -531,6 +529,21 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
                 break
             }
             n.unsavedModifications = n.selectedNote.ClearTags()
+            break
+
+        case "p":
+            if n.selectedNote == nil {
+                n.statusString = "Could not find note"
+                break
+            }
+            prioStr := strings.Join(parts[1:], "")
+            i, err := strconv.ParseUint(prioStr, 10, 64)
+            if err != nil {
+                n.statusString = "Invalid priority given"
+                break
+            }
+            n.selectedNote.Priority = uint(i)
+            n.unsavedModifications = true
             break
 
         default:
@@ -584,6 +597,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, ":at <tag1>,<tag2> - Add tags to selected note")
     fmt.Fprintln(v, ":rt <tag1>,<tag2> - Remove tags from selected note")
     fmt.Fprintln(v, ":ct - Clear tags from selected note")
+    fmt.Fprintln(v, ":p <prio> - Set priority for selected note")
     fmt.Fprintln(v, "/<search> - Search for notes. Press <enter> to finish, <esc> to exit")
     fmt.Fprintln(v, "<F2> - Show also done notes")
     fmt.Fprintln(v, "<F3> - Order notes by priority")

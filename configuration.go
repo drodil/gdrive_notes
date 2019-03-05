@@ -5,6 +5,7 @@ import(
     "io/ioutil"
     "strings"
     "encoding/json"
+    "strconv"
 )
 
 type Configuration struct {
@@ -14,6 +15,7 @@ type Configuration struct {
     UsePriority bool `json:"use_priority"`
     UseDue bool `json:"use_due"`
     DefaultTags []string `json:"default_tags"`
+    DefaultPriority uint `json:"default_priority"`
     config_file string
 }
 
@@ -24,6 +26,7 @@ func NewConfiguration() (Configuration) {
     inst.UsePriority = true
     inst.Color = true
     inst.UseDue = true
+    inst.DefaultPriority = 3
 
     return inst
 }
@@ -72,7 +75,7 @@ func (c *Configuration) Configure() {
     }
 
     for {
-        format, err := Question("Time format to use (empty as default dd.mm.YYYY HH:mm): ")
+        format, err := Question("Time format to use (default dd.mm.YYYY HH:mm): ")
         if err == nil {
             c.TimeFormat = "02.01.2006 15:04"
             if len(format) > 1 {
@@ -88,6 +91,22 @@ func (c *Configuration) Configure() {
         c.DefaultTags = c.DefaultTags[:0]
         for _, tag := range tags {
             c.DefaultTags = append(c.DefaultTags, strings.Trim(tag, " "))
+        }
+    }
+
+    for {
+        prioStr, err := Question("Default priority for notes [0-5] (default 3): ")
+        if err == nil {
+            if len(prioStr) == 0 {
+                c.DefaultPriority = 3
+                break
+            }
+
+            i, err := strconv.ParseUint(prioStr, 10, 64)
+            if err == nil {
+                c.DefaultPriority = uint(i)
+                break
+            }
         }
     }
 
