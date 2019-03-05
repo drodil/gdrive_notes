@@ -26,6 +26,7 @@ type NotesGui struct {
     cmd string
     statusString string
     showNoteContent bool
+    showDone bool
     SaveModifications bool
     unsavedModifications bool
     searchStr string
@@ -147,11 +148,12 @@ func (n *NotesGui) Start() (error) {
         return err
     }
 
+    // Show done
+    err = g.SetKeybinding("", gocui.KeyF2, gocui.ModNone, n.toggleShowDone)
+    if err != nil {
+        return err
+    }
     // TODO: Ordering
-    // TODO: Filtering
-    // TODO: Moving faster around
-    // TODO: Showing the note in the PREVIEW_VIEW
-    // TODO: Showing the note in full screen (or in $EDITOR)
 
     g.Update(n.update)
     err = g.MainLoop()
@@ -417,6 +419,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, "u - Open URLs in note in browser")
     fmt.Fprintln(v, ":a <note> - Quick add note")
     fmt.Fprintln(v, "/<search> - Search for notes. Press <enter> to finish, <esc> to exit")
+    fmt.Fprintln(v, "<F2> - Show also done notes")
 
     g.SetCurrentView(HELP_VIEW)
     return nil
@@ -429,6 +432,11 @@ func (n *NotesGui) cancelCommand(g *gocui.Gui, v *gocui.View) error {
     if err != nil {
         return err
     }
+    return n.update(g)
+}
+
+func (n *NotesGui) toggleShowDone(g *gocui.Gui, v *gocui.View) error {
+    n.showDone = !n.showDone
     return n.update(g)
 }
 
@@ -460,11 +468,19 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
         }
     }
 
+    if !n.showDone && n.selectedNote != nil && n.selectedNote.Done {
+        return n.increaseIndex(g, v)
+    }
+
     v.Clear()
     v.Title = "Notes"
     notesRendered := false
     for _, note := range n.Notes.Notes {
         if len(n.searchStr) > 0 && !note.MatchesSearch(n.searchStr) {
+            continue
+        }
+
+        if !n.showDone && note.Done {
             continue
         }
 
