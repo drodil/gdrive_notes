@@ -18,6 +18,7 @@ type Configuration struct {
     UseDue bool `json:"use_due"`
     DefaultTags []string `json:"default_tags"`
     DefaultPriority uint `json:"default_priority"`
+    DefaultCategory string `json:"default_category"`
     config_file string
 }
 
@@ -29,6 +30,7 @@ func NewConfiguration() (Configuration) {
     inst.Color = true
     inst.UseDue = true
     inst.DefaultPriority = 3
+    inst.DefaultCategory = ""
 
     return inst
 }
@@ -104,12 +106,19 @@ func (c *Configuration) Configure() {
         }
     }
 
-    tagsStr, err := Question("Default tags (comma separated): ")
-    if err == nil {
-        tags := strings.Split(tagsStr, ",")
-        c.DefaultTags = c.DefaultTags[:0]
-        for _, tag := range tags {
-            c.DefaultTags = append(c.DefaultTags, strings.Trim(tag, " "))
+    for {
+        tagsStr, err := Question("Default tags (comma separated): ")
+        if err == nil {
+            if len(tagsStr) == 0 {
+                break
+            }
+
+            tags := strings.Split(tagsStr, ",")
+            c.DefaultTags = c.DefaultTags[:0]
+            for _, tag := range tags {
+                c.DefaultTags = append(c.DefaultTags, strings.Trim(tag, " "))
+            }
+            break
         }
     }
 
@@ -127,6 +136,16 @@ func (c *Configuration) Configure() {
                 break
             }
         }
+    }
+
+    for {
+        catStr, err := Question("Default category (either empty, \"prio\" or \"due\"): ")
+        if err == nil {
+           if len(catStr) == 0 || catStr == "prio" || catStr == "due" {
+                c.DefaultCategory = catStr
+                break
+           }
+       }
     }
 
     c.Save()

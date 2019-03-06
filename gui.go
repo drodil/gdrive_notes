@@ -46,6 +46,7 @@ func (n *NotesGui) Start() (error) {
 
     n.tagIdx = -1
     n.updateShownNotes()
+    n.category = n.Config.DefaultCategory
 
     defer g.Close()
     g.SetManagerFunc(n.layout)
