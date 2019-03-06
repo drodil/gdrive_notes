@@ -193,8 +193,8 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
             }
 
             prio, err := strconv.ParseUint(args[1], 0, 32)
-            if err != nil {
-                return false, errors.New("Invalid priority given")
+            if err != nil || prio > 5 {
+                return false, errors.New("Invalid priority given. Priority should be in range 0-5")
             }
             note.Priority = uint(prio)
             return true, nil
@@ -333,7 +333,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
         case "h":
             fallthrough
         case "help":
-            printHelp(nil, c)
+            printHelp(c)
             return false, nil
 
         case "config":
@@ -344,11 +344,7 @@ func handleArgs(args []string, n *Notes, c *Configuration) (bool, error) {
     return false, errors.New("Invalid command: " + command)
 }
 
-func printHelp(err error, c *Configuration) {
-    if err != nil {
-        fmt.Println(err)
-    }
-
+func printHelp(c *Configuration) {
     fmt.Println("------------------")
     fmt.Println("Google Drive Notes")
     fmt.Println("------------------")
@@ -413,7 +409,7 @@ func main() {
 
     update, err := handleArgs(os.Args[1:], &notes, &config)
     if err != nil {
-        printHelp(err, &config)
+        fmt.Println(err)
         os.Exit(0)
     }
 

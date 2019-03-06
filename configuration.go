@@ -122,7 +122,7 @@ func (c *Configuration) Configure() {
             }
 
             i, err := strconv.ParseUint(prioStr, 10, 64)
-            if err == nil {
+            if err == nil && i <= 5{
                 c.DefaultPriority = uint(i)
                 break
             }

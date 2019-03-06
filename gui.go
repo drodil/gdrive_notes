@@ -550,8 +550,8 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             }
             prioStr := strings.Join(parts[1:], "")
             i, err := strconv.ParseUint(prioStr, 10, 64)
-            if err != nil {
-                n.statusString = "Invalid priority given"
+            if err != nil || i > 5 {
+                n.statusString = "Invalid priority given. Priority should be in range 0-5"
                 break
             }
             n.selectedNote.Priority = uint(i)
