@@ -8,6 +8,7 @@ import (
     "net/http"
     "os"
     "errors"
+    "strconv"
     "sort"
     "strings"
     "time"
@@ -150,6 +151,88 @@ func (n *Notes) GetTagKeys() ([]string) {
     return keys
 }
 
+func (n *Notes) categorizeByPriority(notes []*Note) ([][]*Note, []string) {
+    var ret [][]*Note
+    var keys []string
+
+    for _, note := range notes {
+        key := "Priority " + strconv.Itoa(int(note.Priority))
+        keyIdx := -1
+        for i, k := range keys {
+            if key == k {
+                keyIdx = i
+                break
+            }
+        }
+
+        if keyIdx == -1 {
+            keys = append(keys, key)
+            keyIdx = len(keys) - 1
+            ret = append(ret, []*Note{})
+        }
+        ret[keyIdx] = append(ret[keyIdx], note)
+    }
+    return ret, keys
+}
+
+func (n *Notes) categorizeByDue(notes []*Note) ([][]*Note, []string) {
+    var ret [][]*Note
+    var keys []string
+    now := time.Now()
+
+    // Have to use UTC time as the timezone information is stripped when json
+    // conversion of notes is done in saving/loading phase
+    today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+    tomorrow := today.AddDate(0, 0, 1)
+
+    for _, note := range notes {
+        key := "No due"
+        if !note.Due.IsZero() {
+            rounded := RoundTimeToDay(note.Due)
+            if rounded.Before(today) {
+                key = "Past due"
+            } else if rounded.Equal(today) {
+                key = "Today"
+            } else if rounded.Equal(tomorrow) {
+                key = "Tomorrow"
+            } else {
+                key = note.Due.Format(n.config.DueFormat)
+            }
+        }
+        keyIdx := -1
+        for i, k := range keys {
+            if key == k {
+                keyIdx = i
+                break
+            }
+        }
+
+        if keyIdx == -1 {
+            keys = append(keys, key)
+            keyIdx = len(keys) - 1
+            ret = append(ret, []*Note{})
+        }
+        ret[keyIdx] = append(ret[keyIdx], note)
+    }
+    return ret, keys
+}
+
+
+func (n *Notes) CategorizeNotes(category string, notes []*Note) ([][]*Note, []string) {
+    var ret[][]*Note
+    var keys []string
+    switch(category) {
+        case "prio":
+            return n.categorizeByPriority(notes)
+        case "due":
+            return n.categorizeByDue(notes)
+    }
+
+    keys = append(keys, "")
+    ret = append(ret, notes)
+    return ret, keys
+}
+
 func (n *Notes) GetNotes() []*Note {
     var ret[]*Note
     for i, _ := range n.notes {
@@ -208,9 +291,9 @@ func (n *Notes) OrderNotes(columns []string, notes[]*Note) {
     sort.Slice(notes, func(i, j int) bool {
         ret := false
         for _, col := range columns {
-            asc := true
+            asc := false
             if strings.HasPrefix(col, "-") {
-                asc = false
+                asc = true
                 col = col[1:]
             }
 
@@ -222,6 +305,12 @@ func (n *Notes) OrderNotes(columns []string, notes[]*Note) {
                     ret = notes[i].GetTitle() < notes[j].GetTitle()
                     break
                 case "due":
+                    if notes[i].Due.IsZero() {
+                        return false
+                    }
+                    if notes[j].Due.IsZero() {
+                        return true
+                    }
                     ret = notes[i].Due.Unix() < notes[j].Due.Unix()
                     break
                 case "created":
@@ -231,7 +320,7 @@ func (n *Notes) OrderNotes(columns []string, notes[]*Note) {
                     ret = notes[i].Updated.Unix() < notes[j].Updated.Unix()
                     break
                 case "id":
-                    ret = notes[i].Id > notes[j].Id
+                    ret = notes[i].Id < notes[j].Id
                     break
             }
 

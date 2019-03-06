@@ -7,6 +7,7 @@ import (
     "errors"
     "fmt"
     "strings"
+    "time"
     "golang.org/x/crypto/ssh/terminal"
 
     "github.com/fatih/color"
@@ -92,3 +93,6 @@ func GetPriorityColor(n *Note) (*color.Color) {
     return c
 }
 
+func RoundTimeToDay(t time.Time) time.Time {
+    return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}

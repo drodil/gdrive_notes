@@ -24,6 +24,7 @@
 * `<F6>`: Order notes by id
 * `<F7>`: Order notes by created
 * `<F8>`: Order notes by updated
+* `<F9>`: Toggle note categorization
 
 ## TODO:
 

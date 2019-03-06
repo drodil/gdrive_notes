@@ -35,6 +35,7 @@ type NotesGui struct {
     unsavedModifications bool
     searchStr string
     sortColumns []string
+    category string
 }
 
 func (n *NotesGui) Start() (error) {
@@ -199,6 +200,11 @@ func (n *NotesGui) Start() (error) {
     }
 
     err = g.SetKeybinding("", gocui.KeyF8, gocui.ModNone, n.toggleUpdatedOrder)
+    if err != nil {
+        return err
+    }
+
+    err = g.SetKeybinding("", gocui.KeyF9, gocui.ModNone, n.toggleCategory)
     if err != nil {
         return err
     }
@@ -642,6 +648,7 @@ func (n *NotesGui) showHelp(g *gocui.Gui) error {
     fmt.Fprintln(v, "<F6> - Order notes by id")
     fmt.Fprintln(v, "<F7> - Order notes by created")
     fmt.Fprintln(v, "<F8> - Order notes by updated")
+    fmt.Fprintln(v, "<F9> - Toggle note categorization")
 
     g.SetCurrentView(HELP_VIEW)
     return nil
@@ -737,6 +744,17 @@ func (n *NotesGui) toggleUpdatedOrder(g *gocui.Gui, v *gocui.View) error {
     return n.update(g)
 }
 
+func (n *NotesGui) toggleCategory(g *gocui.Gui, v *gocui.View) error {
+    if len(n.category) == 0 {
+        n.category = "prio"
+    } else if n.category == "prio" {
+        n.category = "due"
+    } else if n.category == "due" {
+        n.category = ""
+    }
+    return n.update(g)
+}
+
 func (n *NotesGui) updateListView(g *gocui.Gui) error {
     v, err := g.View(LIST_VIEW)
     if err != nil {
@@ -750,14 +768,17 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
     }
 
     notesRendered := false
-    for _, note := range n.shownNotes {
-        notesRendered = true
-        if n.selectedNote != nil && n.selectedNote.Id == note.Id {
-            c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
-            c.Fprintln(v, note.GetStatusAndTitle())
-            continue
+    if len(n.category) == 0 {
+        notesRendered = n.printNotes(v, n.shownNotes)
+    } else {
+        maxX, _ :=  v.Size()
+        cat, keys := n.Notes.CategorizeNotes(n.category, n.shownNotes)
+        for i, key := range keys {
+            fmt.Fprintln(v, key)
+            fmt.Fprintln(v, strings.Repeat("-", maxX))
+            notesRendered = n.printNotes(v, cat[i])
+            fmt.Fprintln(v, "")
         }
-        fmt.Fprintln(v, note.GetStatusAndTitle())
     }
 
     if !notesRendered {
@@ -766,6 +787,20 @@ func (n *NotesGui) updateListView(g *gocui.Gui) error {
     }
 
     return nil
+}
+
+func (n *NotesGui) printNotes(v *gocui.View, notes []*Note) bool {
+    notesRendered := false
+    for _, note := range notes {
+        notesRendered = true
+        if n.selectedNote != nil && n.selectedNote.Id == note.Id {
+            c := color.New(color.Bold).Add(color.BgWhite).Add(color.FgBlack)
+            c.Fprintln(v, note.GetStatusAndTitle())
+            continue
+        }
+        fmt.Fprintln(v, note.GetStatusAndTitle())
+    }
+    return notesRendered
 }
 
 func (n *NotesGui) updatePreviewView(g *gocui.Gui) error {
