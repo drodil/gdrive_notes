@@ -64,6 +64,12 @@ func (n *Notes) Init(config *Configuration) (error) {
     return nil
 }
 
+func (n *Notes) AsyncSaveNotes(ch chan<- error) {
+    go func() {
+        ch <- n.SaveNotes()
+    }()
+}
+
 func (n *Notes) SaveNotes() (error) {
     now := time.Now()
     for _, note := range n.notes {

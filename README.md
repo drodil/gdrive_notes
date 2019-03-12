@@ -63,8 +63,6 @@ necessarily want to see them in another.
 * REST server for notes
 * Background service for notifications
     * https://github.com/martinlindhe/notify
-* Use goroutines for loading/saving notes
-    * To make the UI more responsive
 * Allow checking if there is modifications before saving from Notes struct
 * Watch GDrive file for modifications from other apps/clients
 * Remove dep and use go modules instead

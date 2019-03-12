@@ -380,6 +380,7 @@ func (n *NotesGui) editNote(g *gocui.Gui, v *gocui.View) error {
     termbox.Sync()
     if modified {
         n.unsavedModifications = true
+        n.handleAsyncSave()
     }
     return n.update(g)
 }
@@ -394,9 +395,10 @@ func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
     if modified {
         n.Notes.AddNote(note)
         n.unsavedModifications = true
+        n.handleAsyncSave()
     }
-    n.cmd = ""
     n.updateShownNotes()
+    n.cmd = ""
     return n.update(g)
 }
 
@@ -406,6 +408,7 @@ func (n *NotesGui) deleteNote(g *gocui.Gui, v *gocui.View) error {
     }
     n.Notes.DeleteNote(n.selectedNote.Id)
     n.unsavedModifications = true
+    n.handleAsyncSave()
     return n.decreaseIndex(g, v)
 }
 
@@ -415,6 +418,7 @@ func (n *NotesGui) toggleDone(g *gocui.Gui, v *gocui.View) error {
     }
     n.selectedNote.Done = !n.selectedNote.Done
     n.unsavedModifications = true
+    n.handleAsyncSave()
     n.updateShownNotes()
     return n.update(g)
 }
@@ -445,6 +449,20 @@ func (n *NotesGui) backspaceCommand(g *gocui.Gui, v *gocui.View) error {
     }
     n.updateShownNotes()
     return n.update(g)
+}
+
+func (n *NotesGui) handleAsyncSave() {
+    ch := make(chan error)
+    n.Notes.AsyncSaveNotes(ch)
+
+    go func(ch <-chan error, n *NotesGui) {
+        err := <-ch
+        if err != nil {
+            n.statusString = err.Error()
+        } else {
+            n.unsavedModifications = false
+        }
+    }(ch, n)
 }
 
 func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
@@ -499,6 +517,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             note.Content = strings.Join(parts[1:], " ")
             n.Notes.AddNote(note)
             n.unsavedModifications = true
+            n.handleAsyncSave()
             n.updateShownNotes()
             break
 
@@ -512,6 +531,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             for _, tag := range tags {
                 if n.selectedNote.AddTag(tag) {
                     n.unsavedModifications = true
+                    n.handleAsyncSave()
                     n.statusString = "Tags added"
                 }
             }
@@ -527,6 +547,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             for _, tag := range tags {
                 if n.selectedNote.RemoveTag(tag) {
                     n.unsavedModifications = true
+                    n.handleAsyncSave()
                     n.statusString = "Tags removed"
                 }
             }
@@ -538,6 +559,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
                 break
             }
             n.unsavedModifications = n.selectedNote.ClearTags()
+            n.handleAsyncSave()
             n.statusString = "Tags cleared from note"
             break
 
@@ -558,6 +580,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             }
             n.selectedNote.Priority = uint(i)
             n.unsavedModifications = true
+            n.handleAsyncSave()
             n.statusString = "Priority set for note"
             break
 
@@ -578,6 +601,7 @@ func (n *NotesGui) executeCommand(g *gocui.Gui, v *gocui.View) error {
             }
             n.selectedNote.Due = due
             n.unsavedModifications = true
+            n.handleAsyncSave()
             n.statusString = "Due date set for note"
             break
 
