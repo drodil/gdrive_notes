@@ -395,6 +395,7 @@ func (n *NotesGui) addNote(g *gocui.Gui, v *gocui.View) error {
         n.Notes.AddNote(note)
         n.unsavedModifications = true
     }
+    n.cmd = ""
     n.updateShownNotes()
     return n.update(g)
 }

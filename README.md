@@ -50,6 +50,7 @@ necessarily want to see them in another.
 
 ## TODO/Future ideas
 
+* Configure editor executable
 * Start working on note and track time to complete it
     * Should be able to stop work and track work time multiple times per note
     * Should be configurable to be used
